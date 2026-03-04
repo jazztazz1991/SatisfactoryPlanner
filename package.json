@@ -1,0 +1,53 @@
+{
+  "name": "satisfactory-planner",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "db:download": "tsx scripts/downloadGameData.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
+    "@xyflow/react": "^12.10.1",
+    "bcryptjs": "^3.0.3",
+    "next": "16.1.6",
+    "next-auth": "^5.0.0-beta.30",
+    "pg": "^8.19.0",
+    "pg-hstore": "^2.3.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "sequelize": "^6.37.7",
+    "sequelize-typescript": "^2.1.6",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.7.0",
+    "dotenv": "^17.3.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "jsdom": "^25.0.1",
+    "sequelize-cli": "^6.6.5",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5",
+    "vite": "^6.4.1",
+    "vitest": "^4.0.18"
+  }
+}

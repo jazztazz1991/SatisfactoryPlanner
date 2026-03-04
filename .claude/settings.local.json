@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(cp:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(npx sequelize-cli:*)",
+      "Bash(node:*)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:satisfactorydata.readme.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:satisfactory.wiki.gg)",
+      "Bash(code .:*)",
+      "Bash(rm:*)",
+      "Bash(npm test:*)",
+      "Bash(npx playwright:*)"
+    ]
+  }
+}
