@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { findUserByEmail, findUserByProvider, createUser } from "@/repositories/userRepository";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   session: { strategy: "jwt" },
   providers: [
     GitHub({
