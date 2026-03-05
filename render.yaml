@@ -21,8 +21,4 @@ services:
       - key: AUTH_SECRET
         generateValue: true
       - key: NEXTAUTH_URL
-        fromService:
-          type: web
-          name: satisfactory-planner
-          property: host
-          envVarKey: RENDER_EXTERNAL_URL
+        sync: false
