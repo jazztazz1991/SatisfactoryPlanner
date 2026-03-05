@@ -9,6 +9,7 @@ import { Plan } from "./Plan";
 import { PlanTarget } from "./PlanTarget";
 import { PlanNode } from "./PlanNode";
 import { PlanEdge } from "./PlanEdge";
+import { PlanCollaborator } from "./PlanCollaborator";
 
 const models = [
   User,
@@ -21,6 +22,7 @@ const models = [
   PlanTarget,
   PlanNode,
   PlanEdge,
+  PlanCollaborator,
 ];
 
 sequelize.addModels(models);
@@ -36,6 +38,7 @@ Plan.hasMany(PlanNode, { foreignKey: "planId", as: "nodes" });
 Plan.hasMany(PlanEdge, { foreignKey: "planId", as: "edges" });
 PlanNode.hasMany(PlanEdge, { foreignKey: "sourceNodeId", as: "outgoingEdges" });
 PlanNode.hasMany(PlanEdge, { foreignKey: "targetNodeId", as: "incomingEdges" });
+Plan.hasMany(PlanCollaborator, { foreignKey: "planId", as: "collaborators" });
 
 export {
   sequelize,
@@ -49,4 +52,5 @@ export {
   PlanTarget,
   PlanNode,
   PlanEdge,
+  PlanCollaborator,
 };

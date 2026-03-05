@@ -11,6 +11,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 // ─── Shared mock solver result ────────────────────────────────────────────────
 
+// Simple 2-step mock for most planner tests
 const MOCK_CALCULATE_RESULT = {
   steps: [
     {
@@ -43,6 +44,44 @@ const MOCK_CALCULATE_RESULT = {
     { itemClassName: "Desc_OreIron_C", itemName: "Iron Ore", rate: 30 },
   ],
   totalPowerKW: 20,
+};
+
+// Mock with a shared ingredient (Iron Ingot → Iron Plate AND Iron Rod) to trigger a splitter
+const MOCK_WITH_SPLITTER = {
+  steps: [
+    {
+      recipeClassName: "Recipe_IronIngot_C",
+      recipeName: "Iron Ingot",
+      buildingClassName: "Desc_SmelterMk1_C",
+      buildingName: "Smelter",
+      machineCount: 2,
+      powerUsageKW: 8,
+      inputs: [{ itemClassName: "Desc_OreIron_C", itemName: "Iron Ore", rate: 60 }],
+      outputs: [{ itemClassName: "Desc_IronIngot_C", itemName: "Iron Ingot", rate: 60 }],
+    },
+    {
+      recipeClassName: "Recipe_IronPlate_C",
+      recipeName: "Iron Plate",
+      buildingClassName: "Desc_ConstructorMk1_C",
+      buildingName: "Constructor",
+      machineCount: 1,
+      powerUsageKW: 4,
+      inputs: [{ itemClassName: "Desc_IronIngot_C", itemName: "Iron Ingot", rate: 30 }],
+      outputs: [{ itemClassName: "Desc_IronPlate_C", itemName: "Iron Plate", rate: 20 }],
+    },
+    {
+      recipeClassName: "Recipe_IronRod_C",
+      recipeName: "Iron Rod",
+      buildingClassName: "Desc_ConstructorMk1_C",
+      buildingName: "Constructor",
+      machineCount: 1,
+      powerUsageKW: 4,
+      inputs: [{ itemClassName: "Desc_IronIngot_C", itemName: "Iron Ingot", rate: 30 }],
+      outputs: [{ itemClassName: "Desc_IronRod_C", itemName: "Iron Rod", rate: 15 }],
+    },
+  ],
+  rawResources: [{ itemClassName: "Desc_OreIron_C", itemName: "Iron Ore", rate: 60 }],
+  totalPowerKW: 16,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -120,10 +159,11 @@ test.describe("planner page", () => {
     await context.close();
   });
 
-  test("loads with Graph/Tree toggle and Calculate button", async ({ page }) => {
+  test("loads with Graph/Tree/Factory toggle and Calculate button", async ({ page }) => {
     await page.goto(`/plans/${planId}`);
     await expect(page.getByRole("button", { name: "Graph" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Tree" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Factory" })).toBeVisible();
     await expect(page.getByRole("button", { name: /calculate/i })).toBeVisible();
   });
 
@@ -157,7 +197,7 @@ test.describe("planner page", () => {
     await expect(page.getByText(/20\.0 kW total/)).toBeVisible();
   });
 
-  test("Graph button builds and shows the graph view", async ({ page }) => {
+  test("Graph view shows production nodes and edges", async ({ page }) => {
     await page.route(`**/api/plans/${planId}/calculate`, (route) =>
       route.fulfill({ json: MOCK_CALCULATE_RESULT })
     );
@@ -168,7 +208,15 @@ test.describe("planner page", () => {
 
     // Switch to graph — ReactFlow canvas should render
     await page.getByRole("button", { name: "Graph" }).click();
-    await expect(page.locator(".react-flow")).toBeVisible();
+    const flow = page.locator(".react-flow");
+    await expect(flow).toBeVisible();
+
+    // Verify production step nodes are rendered with content
+    await expect(flow.getByText("Smart Plating")).toBeVisible();
+    await expect(flow.getByText("Iron Plate")).toBeVisible();
+
+    // Verify raw resource node
+    await expect(flow.getByText("Iron Ore")).toBeVisible();
   });
 
   test("Tree button switches back to tree view", async ({ page }) => {
@@ -191,6 +239,124 @@ test.describe("planner page", () => {
     await searchInput.fill("iron");
     // Results should be filtered — no result or some result message visible
     await expect(searchInput).toHaveValue("iron");
+  });
+
+  // ── Factory view ──────────────────────────────────────────────────────────
+
+  test("Factory view shows individual blueprint machine nodes", async ({ page }) => {
+    await page.route(`**/api/plans/${planId}/calculate`, (route) =>
+      route.fulfill({ json: MOCK_CALCULATE_RESULT })
+    );
+
+    await page.goto(`/plans/${planId}`);
+    await page.getByRole("button", { name: /calculate/i }).click();
+    await page.getByRole("tree").waitFor({ timeout: 10_000 });
+
+    // Switch to Factory view
+    await page.getByRole("button", { name: "Factory" }).click();
+    const flow = page.locator(".react-flow");
+    await expect(flow).toBeVisible();
+
+    // Individual machine nodes show building names
+    await expect(flow.getByText(/Assembler/).first()).toBeVisible();
+    await expect(flow.getByText(/Constructor/).first()).toBeVisible();
+
+    // Raw resource node
+    await expect(flow.getByText("Iron Ore")).toBeVisible();
+  });
+
+  test("Factory view shows individual machines for shared ingredient chains", async ({ page }) => {
+    await page.route(`**/api/plans/${planId}/calculate`, (route) =>
+      route.fulfill({ json: MOCK_WITH_SPLITTER })
+    );
+
+    await page.goto(`/plans/${planId}`);
+    await page.getByRole("button", { name: /calculate/i }).click();
+    await page.getByRole("tree").waitFor({ timeout: 10_000 });
+
+    await page.getByRole("button", { name: "Factory" }).click();
+    const flow = page.locator(".react-flow");
+    await expect(flow).toBeVisible();
+
+    // Individual building nodes (Smelter ×2 = 2 Smelter nodes)
+    const smelters = flow.getByText("Smelter");
+    await expect(smelters.first()).toBeVisible();
+
+    // Constructor nodes for Iron Plate and Iron Rod
+    const constructors = flow.getByText("Constructor");
+    await expect(constructors.first()).toBeVisible();
+
+    // Raw resource
+    await expect(flow.getByText("Iron Ore")).toBeVisible();
+  });
+
+  test("Factory view shows placeholder before calculate", async ({ page }) => {
+    await page.goto(`/plans/${planId}`);
+    await page.getByRole("button", { name: "Factory" }).click();
+    await expect(page.getByText(/calculate first/i)).toBeVisible();
+  });
+
+  // ── Collaboration / Sharing ──────────────────────────────────────────────
+
+  test("Share button opens share dialog", async ({ page }) => {
+    await page.goto(`/plans/${planId}`);
+    await page.getByRole("button", { name: "Share" }).click();
+    await expect(page.getByText("Share Plan")).toBeVisible();
+    await expect(page.getByText("Invite People")).toBeVisible();
+    await expect(page.getByText("Share Link")).toBeVisible();
+  });
+
+  test("Share dialog shows invite tab with email input", async ({ page }) => {
+    await page.goto(`/plans/${planId}`);
+    await page.getByRole("button", { name: "Share" }).click();
+    await expect(page.getByPlaceholderText("Email address")).toBeVisible();
+    await expect(page.getByText("Invite")).toBeVisible();
+  });
+
+  test("Share dialog link tab shows enable button", async ({ page }) => {
+    await page.goto(`/plans/${planId}`);
+    await page.getByRole("button", { name: "Share" }).click();
+    await page.getByText("Share Link").click();
+    await expect(page.getByText("Link sharing is off")).toBeVisible();
+    await expect(page.getByText("Enable")).toBeVisible();
+  });
+
+  test("Share dialog closes when X clicked", async ({ page }) => {
+    await page.goto(`/plans/${planId}`);
+    await page.getByRole("button", { name: "Share" }).click();
+    await expect(page.getByText("Share Plan")).toBeVisible();
+    await page.getByLabel("Close share dialog").click();
+    await expect(page.getByText("Share Plan")).not.toBeVisible();
+  });
+
+  // ── View switching round-trip ─────────────────────────────────────────────
+
+  test("can switch between all three views after calculate", async ({ page }) => {
+    await page.route(`**/api/plans/${planId}/calculate`, (route) =>
+      route.fulfill({ json: MOCK_CALCULATE_RESULT })
+    );
+
+    await page.goto(`/plans/${planId}`);
+    await page.getByRole("button", { name: /calculate/i }).click();
+    await page.getByRole("tree").waitFor({ timeout: 10_000 });
+
+    // Tree → Factory
+    await page.getByRole("button", { name: "Factory" }).click();
+    await expect(page.locator(".react-flow")).toBeVisible();
+    await expect(page.locator(".react-flow").getByText(/Assembler/).first()).toBeVisible();
+
+    // Factory → Graph
+    await page.getByRole("button", { name: "Graph" }).click();
+    await expect(page.locator(".react-flow")).toBeVisible();
+
+    // Graph → Tree
+    await page.getByRole("button", { name: "Tree" }).click();
+    await expect(page.getByRole("tree")).toBeVisible();
+
+    // Tree → Graph → Factory
+    await page.getByRole("button", { name: "Graph" }).click();
+    await page.getByRole("button", { name: "Factory" }).click();
+    await expect(page.locator(".react-flow").getByText(/Assembler/).first()).toBeVisible();
   });
 
 });

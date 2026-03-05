@@ -10,9 +10,13 @@ vi.mock("@xyflow/react", async (importOriginal) => {
     ...actual,
     BaseEdge: () => <line data-testid="base-edge" />,
     EdgeLabelRenderer: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-    getBezierPath: () => ["M0,0", 50, 50],
   };
 });
+
+vi.mock("@/domain/factory/beltRouting", () => ({
+  buildOrthogonalPath: () => ({ path: "M0,0 L50,0 L50,100 L100,100", labelX: 50, labelY: 50 }),
+  LANE_SPACING: 6,
+}));
 
 const baseProps = {
   id: "edge-1",
@@ -43,45 +47,27 @@ describe("BeltEdge", () => {
   it("renders the base edge", () => {
     render(
       <svg>
-        <BeltEdge {...baseProps} data={{ itemName: "Iron Ore", rate: 30, beltTier: 1 }} />
+        <BeltEdge {...baseProps} data={{ itemName: "Iron Ore", rate: 30, beltTier: 1, laneIndex: 0, laneCount: 1 }} />
       </svg>
     );
     expect(screen.getByTestId("base-edge")).toBeInTheDocument();
   });
 
-  it("shows rate label", () => {
+  it("shows belt tier and rate label", () => {
     render(
       <svg>
-        <BeltEdge {...baseProps} data={{ itemName: "Iron Ore", rate: 30, beltTier: 1 }} />
+        <BeltEdge {...baseProps} data={{ itemName: "Iron Ore", rate: 30, beltTier: 1, laneIndex: 0, laneCount: 1 }} />
       </svg>
     );
-    expect(screen.getByText("30.0/min")).toBeInTheDocument();
+    expect(screen.getByText("Mk1 30/min")).toBeInTheDocument();
   });
 
-  it("shows item name", () => {
+  it("does not show item name separately", () => {
     render(
       <svg>
-        <BeltEdge {...baseProps} data={{ itemName: "Iron Ore", rate: 30, beltTier: 1 }} />
+        <BeltEdge {...baseProps} data={{ itemName: "Iron Ore", rate: 30, beltTier: 1, laneIndex: 0, laneCount: 1 }} />
       </svg>
     );
-    expect(screen.getByText("Iron Ore")).toBeInTheDocument();
-  });
-
-  it("shows Mk tier badge for tier 1", () => {
-    render(
-      <svg>
-        <BeltEdge {...baseProps} data={{ itemName: "Iron Ore", rate: 30, beltTier: 1 }} />
-      </svg>
-    );
-    expect(screen.getByText("Mk1")).toBeInTheDocument();
-  });
-
-  it("shows Mk tier badge for tier 3", () => {
-    render(
-      <svg>
-        <BeltEdge {...baseProps} data={{ itemName: "Steel", rate: 200, beltTier: 3 }} />
-      </svg>
-    );
-    expect(screen.getByText("Mk3")).toBeInTheDocument();
+    expect(screen.queryByText("Iron Ore")).not.toBeInTheDocument();
   });
 });

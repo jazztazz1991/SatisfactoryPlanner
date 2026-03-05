@@ -1,24 +1,30 @@
 import {
   BaseEdge,
   EdgeLabelRenderer,
-  getBezierPath,
   type EdgeProps,
 } from "@xyflow/react";
+import { buildOrthogonalPath } from "@/domain/factory/beltRouting";
 
 export interface BeltEdgeData {
   itemName: string;
   rate: number;
   beltTier: 1 | 2 | 3 | 4 | 5;
+  laneIndex: number;
+  laneCount: number;
   [key: string]: unknown;
 }
 
-const BELT_STYLES: Record<number, { stroke: string; label: string; badge: string }> = {
-  1: { stroke: "#f59e0b", label: "text-amber-400 border-amber-400", badge: "bg-amber-400 text-gray-900" },
-  2: { stroke: "#22c55e", label: "text-green-400 border-green-400", badge: "bg-green-400 text-gray-900" },
-  3: { stroke: "#3b82f6", label: "text-blue-500 border-blue-500", badge: "bg-blue-500 text-white" },
-  4: { stroke: "#a855f7", label: "text-purple-500 border-purple-500", badge: "bg-purple-500 text-white" },
-  5: { stroke: "#06b6d4", label: "text-cyan-400 border-cyan-400", badge: "bg-cyan-400 text-gray-900" },
+const BELT_STYLES: Record<number, { stroke: string; text: string }> = {
+  1: { stroke: "#f59e0b", text: "text-amber-400" },
+  2: { stroke: "#22c55e", text: "text-green-400" },
+  3: { stroke: "#3b82f6", text: "text-blue-400" },
+  4: { stroke: "#a855f7", text: "text-purple-400" },
+  5: { stroke: "#06b6d4", text: "text-cyan-400" },
 };
+
+function formatRate(rate: number): string {
+  return rate % 1 === 0 ? `${rate}` : rate.toFixed(1);
+}
 
 export function BeltEdge({
   id,
@@ -26,41 +32,42 @@ export function BeltEdge({
   sourceY,
   targetX,
   targetY,
-  sourcePosition,
-  targetPosition,
   data,
 }: EdgeProps) {
   const d = data as BeltEdgeData | undefined;
-  const [edgePath, labelX, labelY] = getBezierPath({
+
+  const laneIndex = d?.laneIndex ?? 0;
+  const laneCount = d?.laneCount ?? 1;
+
+  const { path: edgePath, labelX, labelY } = buildOrthogonalPath({
     sourceX,
     sourceY,
-    sourcePosition,
     targetX,
     targetY,
-    targetPosition,
+    laneIndex,
+    laneCount,
   });
 
   const tier = d?.beltTier ?? 1;
   const styles = BELT_STYLES[tier] ?? BELT_STYLES[1];
 
+  // Stagger labels vertically to prevent overlap in dense corridors
+  const labelYOffset = laneCount > 1 ? (laneIndex - (laneCount - 1) / 2) * 14 : 0;
+
   return (
     <>
       <BaseEdge id={id} path={edgePath} style={{ stroke: styles.stroke, strokeWidth: 2 }} />
-      {d?.rate !== undefined && (
+      {d?.rate !== undefined && d.rate > 0 && (
         <EdgeLabelRenderer>
           <div
             style={{
               position: "absolute",
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY + labelYOffset}px)`,
               pointerEvents: "all",
             }}
-            className={`rounded bg-gray-900 px-1.5 py-0.5 text-xs border flex items-center gap-1 ${styles.label}`}
+            className={`rounded bg-gray-900/80 px-1 py-px text-[10px] ${styles.text}`}
           >
-            <span>{d.itemName}</span>
-            <span>{d.rate.toFixed(1)}/min</span>
-            <span className={`rounded px-1 text-xs ${styles.badge}`}>
-              Mk{tier}
-            </span>
+            Mk{tier} {formatRate(d.rate)}/min
           </div>
         </EdgeLabelRenderer>
       )}

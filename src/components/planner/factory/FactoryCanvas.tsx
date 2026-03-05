@@ -1,31 +1,80 @@
 "use client";
-import { useMemo } from "react";
-import { ReactFlow, Background, Controls, MiniMap } from "@xyflow/react";
+import { useCallback, useEffect, useMemo } from "react";
+import {
+  ReactFlow,
+  Background,
+  BackgroundVariant,
+  Controls,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+  type Node,
+  type Edge,
+  type NodeChange,
+  type NodePositionChange,
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCanvasStore } from "@/store/canvasStore";
-import { solverOutputToFactoryGraph } from "./factoryLayout";
-import { FactoryBuildingNode } from "./nodes/FactoryBuildingNode";
-import { SplitterNode } from "./nodes/SplitterNode";
+import { solverOutputToBlueprintFlow, CELL_PX } from "./factoryLayout";
+import { BlueprintMachineNode } from "./nodes/BlueprintMachineNode";
+import { FactoryResourceNode } from "./nodes/FactoryResourceNode";
+import { SplitterMergerNode } from "./nodes/SplitterMergerNode";
 import { BeltEdge } from "./edges/BeltEdge";
-import { ResourceNode } from "@/components/planner/canvas/nodes/ResourceNode";
 
 const nodeTypes = {
-  factoryBuilding: FactoryBuildingNode,
-  splitter: SplitterNode,
-  resource: ResourceNode,
+  blueprintMachine: BlueprintMachineNode,
+  factoryResource: FactoryResourceNode,
+  splitterMerger: SplitterMergerNode,
 };
 
 const edgeTypes = {
   belt: BeltEdge,
 };
 
+function snapToGrid(value: number): number {
+  return Math.round(value / CELL_PX) * CELL_PX;
+}
+
 export function FactoryCanvas() {
   const { solverResult } = useCanvasStore();
 
-  const { nodes, edges } = useMemo(() => {
-    if (!solverResult) return { nodes: [], edges: [] };
-    return solverOutputToFactoryGraph(solverResult);
+  const layout = useMemo(() => {
+    if (!solverResult) return null;
+    return solverOutputToBlueprintFlow(solverResult);
   }, [solverResult]);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  useEffect(() => {
+    if (layout) {
+      setNodes(layout.nodes);
+      setEdges(layout.edges);
+    } else {
+      setNodes([]);
+      setEdges([]);
+    }
+  }, [layout, setNodes, setEdges]);
+
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      const snappedChanges = changes.map((change) => {
+        if (change.type === "position" && change.position) {
+          const posChange = change as NodePositionChange;
+          return {
+            ...posChange,
+            position: {
+              x: snapToGrid(posChange.position!.x),
+              y: snapToGrid(posChange.position!.y),
+            },
+          };
+        }
+        return change;
+      });
+      onNodesChange(snappedChanges);
+    },
+    [onNodesChange]
+  );
 
   if (!solverResult) {
     return (
@@ -40,12 +89,18 @@ export function FactoryCanvas() {
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
+        minZoom={0.05}
+        maxZoom={4}
+        snapToGrid
+        snapGrid={[CELL_PX, CELL_PX]}
         colorMode="dark"
       >
-        <Background />
+        <Background variant={BackgroundVariant.Lines} gap={CELL_PX} color="rgba(75, 85, 99, 0.35)" />
         <Controls />
         <MiniMap nodeColor="#f59e0b" />
       </ReactFlow>

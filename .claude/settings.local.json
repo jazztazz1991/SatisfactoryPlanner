@@ -17,7 +17,24 @@
       "Bash(code .:*)",
       "Bash(rm:*)",
       "Bash(npm test:*)",
-      "Bash(npx playwright:*)"
+      "Bash(npx playwright:*)",
+      "Bash(npx vitest run)",
+      "Bash(npx vitest run src/domain/factory src/components/planner/factory/sprites)",
+      "Bash(npx vitest run src/domain/factory/clusterLayout.test.ts)",
+      "Bash(npx vitest run src/components/planner/factory)",
+      "Bash(npx vitest run src/components/planner/factory/clusterGraphToFlowElements.test.ts)",
+      "Bash(npx vitest run src/components/planner/factory/factoryLayout.test.ts)",
+      "Bash(npx vitest run src/components/planner/factory/nodes/FactoryMachineNode.test.tsx)",
+      "Bash(npx vitest run src/components/planner/factory/nodes/FactoryResourceNode.test.tsx)",
+      "Bash(xargs grep -l \"footprint\\\\|width\\\\|height\\\\|size\\\\|dimension\\\\|foundation\")",
+      "Bash(npx vitest run src/domain/factory/buildingFootprints.test.ts)",
+      "Bash(npx vitest run src/components/planner/factory/nodes/BlueprintMachineNode.test.tsx)",
+      "Bash(npx vitest run src/components/planner/factory/nodes/FactoryResourceNode.test.tsx src/components/planner/factory/nodes/BlueprintMachineNode.test.tsx)",
+      "Bash(xargs ls -la)",
+      "Bash(npx vitest run src/domain/factory/beltRouting.test.ts)",
+      "Bash(npx vitest run src/components/planner/factory/nodes/SplitterMergerNode.test.tsx)",
+      "Bash(npx vitest run src/domain/factory/manifoldLayout.test.ts)",
+      "Bash(xargs -I {} basename {})"
     ]
   }
 }

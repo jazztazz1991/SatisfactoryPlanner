@@ -8,8 +8,13 @@ import { FactoryCanvas } from "./factory/FactoryCanvas";
 import { TargetList } from "./targets/TargetList";
 import { RecipePicker } from "./sidebar/RecipePicker";
 import { NodeInspector } from "./sidebar/NodeInspector";
+import { ShareDialog } from "./ShareDialog";
+import { PresenceAvatars } from "./PresenceAvatars";
+import { RemoteCursors } from "./RemoteCursors";
+import { useCollaboration } from "@/hooks/useCollaboration";
+import { useCursorTracking } from "@/hooks/useCursors";
 import { Button } from "@/components/shared/Button";
-import type { ViewMode } from "@/domain/types/plan";
+import type { ViewMode, CollaboratorRole } from "@/domain/types/plan";
 import type { ISolverOutput, IProductionStep, IRawResourceRequirement } from "@/domain/types/solver";
 import type { Node, Edge } from "@xyflow/react";
 
@@ -117,6 +122,8 @@ type ShellViewMode = ViewMode | "factory";
 interface PlannerShellProps {
   planId: string;
   initialViewMode: ViewMode;
+  shareToken?: string | null;
+  shareRole?: CollaboratorRole | null;
 }
 
 async function calculate(planId: string): Promise<ISolverOutput> {
@@ -125,9 +132,13 @@ async function calculate(planId: string): Promise<ISolverOutput> {
   return res.json();
 }
 
-export function PlannerShell({ planId, initialViewMode }: PlannerShellProps) {
+export function PlannerShell({ planId, initialViewMode, shareToken, shareRole }: PlannerShellProps) {
   const [viewMode, setViewMode] = useState<ShellViewMode>(initialViewMode);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const { setSolverResult, setNodes, setEdges, solverResult, nodes } = useCanvasStore();
+
+  const { sendCursorPosition, broadcastSolverResult } = useCollaboration(planId);
+  const { onMouseMove } = useCursorTracking(sendCursorPosition);
 
   const calcMutation = useMutation({
     mutationFn: () => calculate(planId),
@@ -135,6 +146,7 @@ export function PlannerShell({ planId, initialViewMode }: PlannerShellProps) {
       // Store the result and show tree view immediately — don't block the
       // main thread by converting to graph nodes here.
       setSolverResult(result);
+      broadcastSolverResult(result);
       setViewMode("tree");
     },
   });
@@ -212,10 +224,18 @@ export function PlannerShell({ planId, initialViewMode }: PlannerShellProps) {
           {calcMutation.isError && (
             <span className="text-xs text-red-400">Calculation failed</span>
           )}
+
+          <div className="ml-auto flex items-center gap-2">
+            <PresenceAvatars />
+            <Button size="sm" onClick={() => setShareDialogOpen(true)}>
+              Share
+            </Button>
+          </div>
         </div>
 
         {/* View */}
-        <div className="flex-1 overflow-hidden">
+        <div className="relative flex-1 overflow-hidden" onMouseMove={onMouseMove}>
+          <RemoteCursors />
           {viewMode === "graph" ? (
             <PlanCanvas planId={planId} />
           ) : viewMode === "factory" ? (
@@ -225,6 +245,14 @@ export function PlannerShell({ planId, initialViewMode }: PlannerShellProps) {
           )}
         </div>
       </div>
+
+      <ShareDialog
+        planId={planId}
+        isOpen={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        shareToken={shareToken ?? null}
+        shareRole={shareRole ?? null}
+      />
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { auth } from "@/auth";
-import { getPlanById } from "@/repositories/planRepository";
 import { getNodeById, updateNode, deleteNode } from "@/repositories/nodeRepository";
 import { updateNodeSchema } from "@/domain/validation/nodeSchemas";
-import { ok, err, notFound, unauthorized, forbidden } from "@/lib/apiResponse";
+import { requirePlanAccess } from "@/lib/planAuth";
+import { ok, err, notFound, unauthorized } from "@/lib/apiResponse";
 
 type Params = { params: Promise<{ planId: string; nodeId: string }> };
 
@@ -11,9 +11,8 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!session?.user?.id) return unauthorized();
 
   const { planId, nodeId } = await params;
-  const plan = await getPlanById(planId);
-  if (!plan) return notFound();
-  if (plan.userId !== session.user.id) return forbidden();
+  const { error } = await requirePlanAccess(planId, session.user.id, "editor");
+  if (error) return error;
 
   const node = await getNodeById(nodeId);
   if (!node || node.planId !== planId) return notFound();
@@ -38,9 +37,8 @@ export async function DELETE(_req: Request, { params }: Params) {
   if (!session?.user?.id) return unauthorized();
 
   const { planId, nodeId } = await params;
-  const plan = await getPlanById(planId);
-  if (!plan) return notFound();
-  if (plan.userId !== session.user.id) return forbidden();
+  const { error } = await requirePlanAccess(planId, session.user.id, "editor");
+  if (error) return error;
 
   const node = await getNodeById(nodeId);
   if (!node || node.planId !== planId) return notFound();

@@ -43,4 +43,9 @@ export class Plan extends Model {
   @Column({ type: DataType.JSONB, allowNull: true })
   declare canvasViewport: object | null;
 
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare shareToken: string | null;
+
+  @Column({ type: DataType.STRING(20), allowNull: true })
+  declare shareRole: "editor" | "viewer" | null;
 }

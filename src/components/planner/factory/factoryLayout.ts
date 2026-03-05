@@ -1,5 +1,14 @@
 import type { Node, Edge } from "@xyflow/react";
 import type { ISolverOutput, IProductionStep, IRawResourceRequirement } from "@/domain/types/solver";
+import { getSpriteKey, type SpriteKey } from "@/domain/factory/buildingSprites";
+import { getBuildingFootprint } from "@/domain/factory/buildingFootprints";
+import {
+  buildItemFlowMap,
+  createSplitterManifold,
+  createMergerManifold,
+} from "@/domain/factory/manifoldLayout";
+
+// ─── Belt tier ───────────────────────────────────────────────────────────────
 
 const BELT_TIERS = [
   { maxRate: 60, tier: 1 },
@@ -15,33 +24,54 @@ export function getBeltTier(rate: number): 1 | 2 | 3 | 4 | 5 {
   return 5;
 }
 
-const NODE_W = 240;
-const NODE_H = 130;
-const GAP_X = 40;
-const GAP_Y = 60;
+// ─── Grid constants ─────────────────────────────────────────────────────────
 
-export function solverOutputToFactoryGraph(result: ISolverOutput): { nodes: Node[]; edges: Edge[] } {
+/** Pixels per foundation (1 foundation = 8m in-game). */
+export const CELL_PX = 48;
+
+const MACHINE_GAP = 1;       // foundations between stacked machines
+const GROUP_GAP_Y = 3;       // foundations between recipe groups in same column
+const BUS_GAP = 2;           // foundations between bus column and machines
+const SPLITTER_W = 1;        // splitter/merger is 1×1 foundation
+const INTER_COL_GAP = 3;     // foundations gap between depth columns (after output bus)
+
+// ─── Data interfaces ─────────────────────────────────────────────────────────
+
+export interface BlueprintMachineNodeData {
+  buildingName: string | null;
+  recipeName: string;
+  spriteKey: SpriteKey;
+  widthPx: number;
+  depthPx: number;
+  inputItems: string[];
+  outputItems: string[];
+  [key: string]: unknown;
+}
+
+export interface FactoryResourceNodeData {
+  itemClassName: string;
+  itemName: string;
+  rate: number;
+  [key: string]: unknown;
+}
+
+// ─── Main layout function ────────────────────────────────────────────────────
+
+export function solverOutputToBlueprintFlow(result: ISolverOutput): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
-  // Build a name lookup for all items
-  const itemNameMap = new Map<string, string>();
-  result.steps.forEach((step) => {
-    step.inputs.forEach((i) => itemNameMap.set(i.itemClassName, i.itemName));
-    step.outputs.forEach((o) => itemNameMap.set(o.itemClassName, o.itemName));
-  });
-  result.rawResources.forEach((r) => itemNameMap.set(r.itemClassName, r.itemName));
+  // ─── Depth assignment (topological) ──────────────────────────────────────
 
-  // --- Depth assignment (topological) ---
   const stepIds = new Set(result.steps.map((s) => s.recipeClassName));
   const producedBy = new Map<string, string>();
   result.steps.forEach((step) => {
     step.outputs.forEach((o) => producedBy.set(o.itemClassName, step.recipeClassName));
   });
 
-  const depth = new Map<string, number>();
+  const depthMap = new Map<string, number>();
   function getDepth(recipeClassName: string, visited = new Set<string>()): number {
-    if (depth.has(recipeClassName)) return depth.get(recipeClassName)!;
+    if (depthMap.has(recipeClassName)) return depthMap.get(recipeClassName)!;
     if (visited.has(recipeClassName)) return 0;
     visited.add(recipeClassName);
     const step = result.steps.find((s) => s.recipeClassName === recipeClassName)!;
@@ -50,7 +80,7 @@ export function solverOutputToFactoryGraph(result: ISolverOutput): { nodes: Node
       .filter((id): id is string => !!id && stepIds.has(id))
       .map((id) => getDepth(id, visited) + 1);
     const d = inputDepths.length > 0 ? Math.max(...inputDepths) : 0;
-    depth.set(recipeClassName, d);
+    depthMap.set(recipeClassName, d);
     return d;
   }
   result.steps.forEach((s) => getDepth(s.recipeClassName));
@@ -58,119 +88,339 @@ export function solverOutputToFactoryGraph(result: ISolverOutput): { nodes: Node
   // Group steps by depth column
   const columns = new Map<number, IProductionStep[]>();
   result.steps.forEach((step) => {
-    const col = depth.get(step.recipeClassName) ?? 0;
+    const col = depthMap.get(step.recipeClassName) ?? 0;
     if (!columns.has(col)) columns.set(col, []);
     columns.get(col)!.push(step);
   });
 
-  // Track node positions for splitter placement
-  const nodePosition = new Map<string, { x: number; y: number }>();
+  // ─── Machine nodes — vertical stacking ───────────────────────────────────
 
-  // --- Step nodes ---
-  columns.forEach((steps, col) => {
-    steps.forEach((step, row) => {
-      const pos = { x: row * (NODE_W + GAP_X), y: col * (NODE_H + GAP_Y) };
-      nodePosition.set(`factory-step-${step.recipeClassName}`, pos);
-      nodes.push({
-        id: `factory-step-${step.recipeClassName}`,
-        type: "factoryBuilding",
-        position: pos,
-        data: {
-          recipeName: step.recipeName,
-          buildingName: step.buildingName,
-          machineCount: Math.ceil(step.machineCount),
-          powerUsageKW: step.powerUsageKW,
-        },
-      });
-    });
-  });
+  const sortedDepths = [...columns.keys()].sort((a, b) => a - b);
 
-  // --- Raw resource nodes ---
-  result.rawResources.forEach((r: IRawResourceRequirement, i) => {
-    const pos = { x: i * (NODE_W + GAP_X), y: -(NODE_H + GAP_Y) };
-    nodePosition.set(`factory-raw-${r.itemClassName}`, pos);
-    nodes.push({
-      id: `factory-raw-${r.itemClassName}`,
-      type: "resource",
-      position: pos,
-      data: { itemName: r.itemName, rate: r.rate },
-    });
-  });
+  const stepMachineIds = new Map<string, string[]>();
+  // Track machine Y positions per step (needed for manifold splitter alignment)
+  const stepMachineYPositions = new Map<string, number[]>();
+  let columnX = 0;
 
-  // --- Producer/Consumer maps ---
-  const itemProducer = new Map<string, string>();
-  result.steps.forEach((step) => {
-    step.outputs.forEach((o) => {
-      itemProducer.set(o.itemClassName, `factory-step-${step.recipeClassName}`);
-    });
-  });
-  result.rawResources.forEach((r) => {
-    itemProducer.set(r.itemClassName, `factory-raw-${r.itemClassName}`);
-  });
+  // Track each column's machine area X range
+  const columnMachineX = new Map<number, number>();
 
-  const itemConsumers = new Map<string, Array<{ nodeId: string; rate: number }>>();
-  result.steps.forEach((step) => {
-    step.inputs.forEach((input) => {
-      if (!itemConsumers.has(input.itemClassName)) {
-        itemConsumers.set(input.itemClassName, []);
-      }
-      itemConsumers.get(input.itemClassName)!.push({
-        nodeId: `factory-step-${step.recipeClassName}`,
-        rate: input.rate,
-      });
-    });
-  });
+  for (const depth of sortedDepths) {
+    const steps = columns.get(depth)!;
+    let maxFpW = 0;
+    let maxInputItems = 0;
+    let maxOutputItems = 0;
 
-  // --- Splitter insertion and edge creation ---
-  itemConsumers.forEach((consumers, itemClassName) => {
-    const producerNodeId = itemProducer.get(itemClassName);
-    if (!producerNodeId) return;
-
-    const itemName = itemNameMap.get(itemClassName) ?? itemClassName;
-    const totalRate = consumers.reduce((sum, c) => sum + c.rate, 0);
-
-    if (consumers.length > 1) {
-      const splitterId = `factory-split-${itemClassName}`;
-      const producerPos = nodePosition.get(producerNodeId) ?? { x: 0, y: 0 };
-      const splitterPos = {
-        x: producerPos.x,
-        y: producerPos.y + (NODE_H + GAP_Y) * 0.5,
-      };
-      nodes.push({
-        id: splitterId,
-        type: "splitter",
-        position: splitterPos,
-        data: { itemName, rate: totalRate },
-      });
-
-      edges.push({
-        id: `e-${producerNodeId}-${splitterId}`,
-        source: producerNodeId,
-        target: splitterId,
-        type: "belt",
-        data: { itemName, rate: totalRate, beltTier: getBeltTier(totalRate) },
-      });
-
-      consumers.forEach((consumer) => {
-        edges.push({
-          id: `e-${splitterId}-${consumer.nodeId}`,
-          source: splitterId,
-          target: consumer.nodeId,
-          type: "belt",
-          data: { itemName, rate: consumer.rate, beltTier: getBeltTier(consumer.rate) },
-        });
-      });
-    } else {
-      const consumer = consumers[0];
-      edges.push({
-        id: `e-${producerNodeId}-${consumer.nodeId}`,
-        source: producerNodeId,
-        target: consumer.nodeId,
-        type: "belt",
-        data: { itemName, rate: consumer.rate, beltTier: getBeltTier(consumer.rate) },
-      });
+    // First pass: find max footprint width and max input/output item counts
+    for (const step of steps) {
+      const fp = getBuildingFootprint(step.buildingClassName);
+      maxFpW = Math.max(maxFpW, fp.w);
+      maxInputItems = Math.max(maxInputItems, step.inputs.length);
+      maxOutputItems = Math.max(maxOutputItems, step.outputs.length);
     }
+
+    // Reserve space for input bus columns (one per input item, to the left)
+    const inputBusWidth = maxInputItems * (SPLITTER_W + 1); // +1 gap between buses
+    // Machine area starts after input buses + gap
+    const machineAreaX = columnX + inputBusWidth + BUS_GAP;
+    columnMachineX.set(depth, machineAreaX);
+
+    let groupY = 0;
+
+    for (const step of steps) {
+      const fp = getBuildingFootprint(step.buildingClassName);
+      const count = Math.ceil(step.machineCount);
+      const machineIds: string[] = [];
+      const machineYs: number[] = [];
+      const spriteKey = getSpriteKey(step.buildingClassName);
+      const inputItems = step.inputs.map((i) => i.itemClassName);
+      const outputItems = step.outputs.map((o) => o.itemClassName);
+
+      // Vertical stacking: all machines at same X, increasing Y
+      for (let i = 0; i < count; i++) {
+        const x = machineAreaX;
+        const y = groupY + i * (fp.d + MACHINE_GAP);
+
+        const nodeId = `bp-${step.recipeClassName}-${i}`;
+        machineIds.push(nodeId);
+        machineYs.push(y * CELL_PX);
+
+        nodes.push({
+          id: nodeId,
+          type: "blueprintMachine",
+          position: { x: x * CELL_PX, y: y * CELL_PX },
+          data: {
+            buildingName: step.buildingName,
+            recipeName: step.recipeName,
+            spriteKey,
+            widthPx: fp.w * CELL_PX,
+            depthPx: fp.d * CELL_PX,
+            inputItems,
+            outputItems,
+          } satisfies BlueprintMachineNodeData,
+        });
+      }
+
+      stepMachineIds.set(step.recipeClassName, machineIds);
+      stepMachineYPositions.set(step.recipeClassName, machineYs);
+
+      const groupHeight = count * (fp.d + MACHINE_GAP) - MACHINE_GAP;
+      groupY += groupHeight + GROUP_GAP_Y;
+    }
+
+    // Advance columnX past machine area + output bus space + inter-column gap
+    const outputBusWidth = maxOutputItems * (SPLITTER_W + 1);
+    columnX = machineAreaX + maxFpW + BUS_GAP + outputBusWidth + INTER_COL_GAP;
+  }
+
+  // ─── Raw resource nodes ──────────────────────────────────────────────────
+
+  const rawX = -(1 + BUS_GAP + SPLITTER_W + BUS_GAP) * CELL_PX;
+  let rawY = 0;
+  for (const r of result.rawResources) {
+    nodes.push({
+      id: `bp-raw-${r.itemClassName}`,
+      type: "factoryResource",
+      position: { x: rawX, y: rawY },
+      data: {
+        itemClassName: r.itemClassName,
+        itemName: r.itemName,
+        rate: r.rate,
+      } satisfies FactoryResourceNodeData,
+    });
+    rawY += (1 + MACHINE_GAP) * CELL_PX;
+  }
+
+  // ─── Build raw node ID map ───────────────────────────────────────────────
+
+  const rawNodeIds = new Map<string, string>();
+  result.rawResources.forEach((r: IRawResourceRequirement) => {
+    rawNodeIds.set(r.itemClassName, `bp-raw-${r.itemClassName}`);
   });
+
+  // ─── Build item flow map and create manifold edges ───────────────────────
+
+  const itemFlows = buildItemFlowMap(result.steps, result.rawResources, stepMachineIds, rawNodeIds);
+
+  let splitterIdx = 0;
+  let mergerIdx = 0;
+
+  for (const flow of itemFlows.values()) {
+    const { itemClassName, itemName, producerNodeIds, consumers } = flow;
+
+    // ── Source side: if multiple producers, create merger manifold ──────
+
+    let effectiveSourceId: string;
+    let effectiveSourceHandle: string;
+
+    if (producerNodeIds.length > 1) {
+      // Find the producer step to get Y positions
+      const producerRecipe = [...depthMap.entries()].find(([recipe]) => {
+        const ids = stepMachineIds.get(recipe) ?? [];
+        return ids.length > 0 && ids[0] === producerNodeIds[0];
+      });
+
+      if (producerRecipe) {
+        const producerDepth = producerRecipe[1];
+        const producerMachineAreaX = columnMachineX.get(producerDepth) ?? 0;
+        const fp = getBuildingFootprint(
+          result.steps.find((s) => s.recipeClassName === producerRecipe[0])!.buildingClassName
+        );
+        // Find output item index for bus X offset
+        const producerStep = result.steps.find((s) => s.recipeClassName === producerRecipe[0])!;
+        const outputItemIdx = producerStep.outputs.findIndex((o) => o.itemClassName === itemClassName);
+        const mergerBusX = (producerMachineAreaX + fp.w + BUS_GAP + outputItemIdx * (SPLITTER_W + 1)) * CELL_PX;
+
+        const machineYs = stepMachineYPositions.get(producerRecipe[0]) ?? [];
+
+        const mergerResult = createMergerManifold({
+          producerIds: producerNodeIds,
+          busX: mergerBusX,
+          machineYPositions: machineYs,
+          itemClassName,
+          itemName,
+          totalRate: flow.totalRate,
+          targetNodeId: "__placeholder__",
+          targetHandleId: `in-${itemClassName}`,
+          mergerIdStart: mergerIdx,
+        });
+
+        mergerIdx += producerNodeIds.length;
+
+        // Add merger nodes
+        nodes.push(...mergerResult.nodes);
+
+        // Add all merger edges EXCEPT the last one (which goes to placeholder)
+        const lastMergerId = `bp-merger-${mergerIdx - 1}`;
+        edges.push(...mergerResult.edges.filter((e) => e.target !== "__placeholder__"));
+
+        effectiveSourceId = lastMergerId;
+        effectiveSourceHandle = `bus-out-${itemClassName}`;
+      } else {
+        effectiveSourceId = producerNodeIds[0];
+        effectiveSourceHandle = `out-${itemClassName}`;
+      }
+    } else if (producerNodeIds.length === 1) {
+      effectiveSourceId = producerNodeIds[0];
+      effectiveSourceHandle = `out-${itemClassName}`;
+    } else {
+      continue; // No producers, skip
+    }
+
+    // ── Consumer side: for each consumer step, create splitter manifold ─
+
+    if (consumers.length === 1) {
+      // Single consumer step
+      const consumer = consumers[0];
+      const consumerIds = consumer.machineIds;
+
+      if (consumerIds.length > 1) {
+        // Multiple machines → splitter manifold
+        const consumerDepth = depthMap.get(consumer.recipeClassName) ?? 0;
+        const consumerMachineAreaX = columnMachineX.get(consumerDepth) ?? 0;
+
+        // Find input item index for bus X offset
+        const consumerStep = result.steps.find((s) => s.recipeClassName === consumer.recipeClassName)!;
+        const inputItemIdx = consumerStep.inputs.findIndex((inp) => inp.itemClassName === itemClassName);
+        const splitterBusX = (consumerMachineAreaX - BUS_GAP - SPLITTER_W - inputItemIdx * (SPLITTER_W + 1)) * CELL_PX;
+
+        const machineYs = stepMachineYPositions.get(consumer.recipeClassName) ?? [];
+
+        const splitterResult = createSplitterManifold({
+          consumerIds,
+          busX: splitterBusX,
+          machineYPositions: machineYs,
+          itemClassName,
+          itemName,
+          totalRate: consumer.rate,
+          sourceNodeId: effectiveSourceId,
+          sourceHandleId: effectiveSourceHandle,
+          splitterIdStart: splitterIdx,
+        });
+
+        splitterIdx += consumerIds.length;
+        nodes.push(...splitterResult.nodes);
+        edges.push(...splitterResult.edges);
+      } else if (consumerIds.length === 1) {
+        // Single machine → direct edge
+        edges.push({
+          id: `e-${effectiveSourceId}-to-${consumerIds[0]}-${itemClassName}`,
+          source: effectiveSourceId,
+          sourceHandle: effectiveSourceHandle,
+          target: consumerIds[0],
+          targetHandle: `in-${itemClassName}`,
+          type: "belt",
+          data: { itemName, rate: consumer.rate, beltTier: getBeltTier(consumer.rate), laneIndex: 0, laneCount: 1 },
+        });
+      }
+    } else if (consumers.length > 1) {
+      // Multiple consumer steps → create inter-step splitter chain first
+      // Then each step may have its own intra-step manifold
+
+      // Create one inter-step splitter per consumer step
+      // Position them in a small chain between source and first consumer
+      const interStepSplitterIds: string[] = [];
+      const interSplitterStartIdx = splitterIdx;
+
+      // Find a reasonable Y position for the inter-step splitters
+      // Use Y positions based on each consumer step's first machine
+      const interSplitterYs: number[] = consumers.map((c) => {
+        const ys = stepMachineYPositions.get(c.recipeClassName) ?? [0];
+        return ys[0];
+      });
+
+      // Position inter-step splitters in the column between source and first consumer
+      // Use the source's right edge area
+      const sourceNode = nodes.find((n) => n.id === effectiveSourceId);
+      const firstConsumerStep = consumers[0];
+      const firstConsumerDepth = depthMap.get(firstConsumerStep.recipeClassName) ?? 0;
+      const firstConsumerMachineX = columnMachineX.get(firstConsumerDepth) ?? 0;
+
+      const interSplitterX = sourceNode
+        ? Math.round(((sourceNode.position.x + firstConsumerMachineX * CELL_PX) / 2) / CELL_PX) * CELL_PX
+        : 0;
+
+      for (let ci = 0; ci < consumers.length; ci++) {
+        const interId = `bp-splitter-${splitterIdx++}`;
+        interStepSplitterIds.push(interId);
+
+        nodes.push({
+          id: interId,
+          type: "splitterMerger",
+          position: { x: interSplitterX, y: interSplitterYs[ci] },
+          data: { kind: "splitter", itemClassName },
+        });
+      }
+
+      // Source → first inter-step splitter
+      edges.push({
+        id: `e-${effectiveSourceId}-to-${interStepSplitterIds[0]}-${itemClassName}`,
+        source: effectiveSourceId,
+        sourceHandle: effectiveSourceHandle,
+        target: interStepSplitterIds[0],
+        targetHandle: `bus-in-${itemClassName}`,
+        type: "belt",
+        data: { itemName, rate: flow.totalRate, beltTier: getBeltTier(flow.totalRate), laneIndex: 0, laneCount: 1 },
+      });
+
+      // Chain inter-step splitters
+      for (let ci = 0; ci < consumers.length - 1; ci++) {
+        const remainingRate = flow.totalRate - consumers.slice(0, ci + 1).reduce((s, c) => s + c.rate, 0);
+        edges.push({
+          id: `e-${interStepSplitterIds[ci]}-bus-to-${interStepSplitterIds[ci + 1]}-${itemClassName}`,
+          source: interStepSplitterIds[ci],
+          sourceHandle: `bus-out-${itemClassName}`,
+          target: interStepSplitterIds[ci + 1],
+          targetHandle: `bus-in-${itemClassName}`,
+          type: "belt",
+          data: { itemName, rate: remainingRate, beltTier: getBeltTier(remainingRate), laneIndex: 0, laneCount: 1 },
+        });
+      }
+
+      // Each inter-step splitter → its consumer step
+      for (let ci = 0; ci < consumers.length; ci++) {
+        const consumer = consumers[ci];
+        const consumerIds = consumer.machineIds;
+
+        if (consumerIds.length > 1) {
+          // Intra-step splitter manifold
+          const consumerDepth = depthMap.get(consumer.recipeClassName) ?? 0;
+          const consumerMachineAreaX = columnMachineX.get(consumerDepth) ?? 0;
+          const consumerStep = result.steps.find((s) => s.recipeClassName === consumer.recipeClassName)!;
+          const inputItemIdx = consumerStep.inputs.findIndex((inp) => inp.itemClassName === itemClassName);
+          const splitterBusX = (consumerMachineAreaX - BUS_GAP - SPLITTER_W - inputItemIdx * (SPLITTER_W + 1)) * CELL_PX;
+          const machineYs = stepMachineYPositions.get(consumer.recipeClassName) ?? [];
+
+          const splitterResult = createSplitterManifold({
+            consumerIds,
+            busX: splitterBusX,
+            machineYPositions: machineYs,
+            itemClassName,
+            itemName,
+            totalRate: consumer.rate,
+            sourceNodeId: interStepSplitterIds[ci],
+            sourceHandleId: `branch-out-${itemClassName}`,
+            splitterIdStart: splitterIdx,
+          });
+
+          splitterIdx += consumerIds.length;
+          nodes.push(...splitterResult.nodes);
+          edges.push(...splitterResult.edges);
+        } else if (consumerIds.length === 1) {
+          // Direct from inter-step splitter to single machine
+          edges.push({
+            id: `e-${interStepSplitterIds[ci]}-branch-to-${consumerIds[0]}-${itemClassName}`,
+            source: interStepSplitterIds[ci],
+            sourceHandle: `branch-out-${itemClassName}`,
+            target: consumerIds[0],
+            targetHandle: `in-${itemClassName}`,
+            type: "belt",
+            data: { itemName, rate: consumer.rate, beltTier: getBeltTier(consumer.rate), laneIndex: 0, laneCount: 1 },
+          });
+        }
+      }
+    }
+  }
 
   return { nodes, edges };
 }

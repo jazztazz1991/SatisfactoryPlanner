@@ -9,6 +9,8 @@ export interface IPlan {
   viewMode: ViewMode;
   templateKey: string | null;
   canvasViewport: { x: number; y: number; zoom: number } | null;
+  shareToken: string | null;
+  shareRole: CollaboratorRole | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,3 +43,19 @@ export interface IPlanEdge {
   itemClassName: string;
   rate: number;
 }
+
+export type CollaboratorRole = "editor" | "viewer";
+
+export interface IPlanCollaborator {
+  id: string;
+  planId: string;
+  userId: string | null;
+  email: string | null;
+  role: CollaboratorRole;
+  inviteToken: string | null;
+  acceptedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PlanAccessRole = "owner" | "editor" | "viewer";

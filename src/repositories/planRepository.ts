@@ -52,6 +52,22 @@ export async function deletePlan(id: string): Promise<boolean> {
   return count > 0;
 }
 
+export async function getPlanByShareToken(token: string): Promise<IPlan | null> {
+  const row = await Plan.findOne({ where: { shareToken: token } });
+  return row ? planToDTO(row) : null;
+}
+
+export async function updatePlanShareSettings(
+  id: string,
+  shareToken: string | null,
+  shareRole: "editor" | "viewer" | null
+): Promise<IPlan | null> {
+  const row = await Plan.findByPk(id);
+  if (!row) return null;
+  await row.update({ shareToken, shareRole });
+  return planToDTO(row);
+}
+
 function planToDTO(row: Plan): IPlan {
   return {
     id: row.id,
@@ -61,6 +77,8 @@ function planToDTO(row: Plan): IPlan {
     viewMode: row.viewMode,
     templateKey: row.templateKey,
     canvasViewport: row.canvasViewport as IPlan["canvasViewport"],
+    shareToken: row.shareToken ?? null,
+    shareRole: row.shareRole ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

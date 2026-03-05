@@ -1,23 +1,17 @@
 import { auth } from "@/auth";
-import { getPlanById, updatePlan, deletePlan } from "@/repositories/planRepository";
+import { updatePlan, deletePlan } from "@/repositories/planRepository";
 import { updatePlanSchema } from "@/domain/validation/planSchemas";
-import { ok, err, notFound, unauthorized, forbidden } from "@/lib/apiResponse";
+import { requirePlanAccess } from "@/lib/planAuth";
+import { ok, err, unauthorized } from "@/lib/apiResponse";
 
 type Params = { params: Promise<{ planId: string }> };
-
-async function requirePlanOwner(planId: string, userId: string) {
-  const plan = await getPlanById(planId);
-  if (!plan) return { plan: null, error: notFound() };
-  if (plan.userId !== userId) return { plan: null, error: forbidden() };
-  return { plan, error: null };
-}
 
 export async function GET(_req: Request, { params }: Params) {
   const session = await auth();
   if (!session?.user?.id) return unauthorized();
 
   const { planId } = await params;
-  const { plan, error } = await requirePlanOwner(planId, session.user.id);
+  const { plan, error } = await requirePlanAccess(planId, session.user.id, "viewer");
   if (error) return error;
   return ok(plan);
 }
@@ -27,9 +21,8 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!session?.user?.id) return unauthorized();
 
   const { planId } = await params;
-  const { plan: existing, error } = await requirePlanOwner(planId, session.user.id);
+  const { error } = await requirePlanAccess(planId, session.user.id, "editor");
   if (error) return error;
-  void existing;
 
   const body = await request.json().catch(() => null);
   const parsed = updatePlanSchema.safeParse(body);
@@ -51,7 +44,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   if (!session?.user?.id) return unauthorized();
 
   const { planId } = await params;
-  const { error } = await requirePlanOwner(planId, session.user.id);
+  const { error } = await requirePlanAccess(planId, session.user.id, "owner");
   if (error) return error;
 
   try {

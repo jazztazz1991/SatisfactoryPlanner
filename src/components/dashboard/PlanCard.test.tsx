@@ -19,6 +19,8 @@ const plan: IPlan = {
   viewMode: "graph",
   templateKey: null,
   canvasViewport: null,
+  shareToken: null,
+  shareRole: null,
   createdAt: "2025-01-01T00:00:00.000Z",
   updatedAt: "2025-01-02T00:00:00.000Z",
 };

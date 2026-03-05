@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { auth } from "@/auth";
-import { getPlanById } from "@/repositories/planRepository";
 import { getTargetsByPlan } from "@/repositories/targetRepository";
 import { getAllRecipes, getAllItems, getAllBuildings } from "@/repositories/gameDataRepository";
 import { solveProductionChain } from "@/domain/solver/rateCalculator";
-import { ok, err, notFound, unauthorized, forbidden } from "@/lib/apiResponse";
+import { requirePlanAccess } from "@/lib/planAuth";
+import { ok, err, unauthorized } from "@/lib/apiResponse";
 
 const calculateSchema = z.object({
   enabledAlternates: z.array(z.string()).optional().default([]),
@@ -18,9 +18,8 @@ export async function POST(request: Request, { params }: Params) {
   if (!session?.user?.id) return unauthorized();
 
   const { planId } = await params;
-  const plan = await getPlanById(planId);
-  if (!plan) return notFound();
-  if (plan.userId !== session.user.id) return forbidden();
+  const { error } = await requirePlanAccess(planId, session.user.id, "editor");
+  if (error) return error;
 
   const body = await request.json().catch(() => ({}));
   const parsed = calculateSchema.safeParse(body);

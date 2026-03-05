@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { auth } from "@/auth";
-import { getPlanById } from "@/repositories/planRepository";
 import { createEdge } from "@/repositories/edgeRepository";
-import { ok, err, notFound, unauthorized, forbidden } from "@/lib/apiResponse";
+import { requirePlanAccess } from "@/lib/planAuth";
+import { ok, err, unauthorized } from "@/lib/apiResponse";
 
 const createEdgeSchema = z.object({
   sourceNodeId: z.string().uuid(),
@@ -18,9 +18,8 @@ export async function POST(request: Request, { params }: Params) {
   if (!session?.user?.id) return unauthorized();
 
   const { planId } = await params;
-  const plan = await getPlanById(planId);
-  if (!plan) return notFound();
-  if (plan.userId !== session.user.id) return forbidden();
+  const { error } = await requirePlanAccess(planId, session.user.id, "editor");
+  if (error) return error;
 
   const body = await request.json().catch(() => null);
   const parsed = createEdgeSchema.safeParse(body);
