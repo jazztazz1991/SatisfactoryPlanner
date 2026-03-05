@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getPlanByShareToken } from "@/repositories/planRepository";
 import {
@@ -10,6 +11,11 @@ import { ok, err, notFound, unauthorized } from "@/lib/apiResponse";
 import type { CollaboratorRole } from "@/domain/types/plan";
 
 type Params = { params: Promise<{ token: string }> };
+
+export async function GET(_req: Request, { params }: Params) {
+  const { token } = await params;
+  return NextResponse.redirect(new URL(`/plans/join/${token}`, process.env.NEXTAUTH_URL ?? "http://localhost:3000"));
+}
 
 export async function POST(_req: Request, { params }: Params) {
   const session = await auth();
