@@ -35,7 +35,7 @@ module.exports = {
       updated_at: new Date(),
     }));
 
-    await queryInterface.bulkInsert("game_buildings", buildings, {});
+    await queryInterface.bulkInsert("game_buildings", buildings, { ignoreDuplicates: true });
   },
 
   async down(queryInterface) {

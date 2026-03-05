@@ -59,14 +59,14 @@ module.exports = {
       await queryInterface.bulkInsert(
         "game_recipe_ingredients",
         ingredients.slice(i, i + BATCH),
-        {}
+        { ignoreDuplicates: true }
       );
     }
     for (let i = 0; i < products.length; i += BATCH) {
       await queryInterface.bulkInsert(
         "game_recipe_products",
         products.slice(i, i + BATCH),
-        {}
+        { ignoreDuplicates: true }
       );
     }
   },
