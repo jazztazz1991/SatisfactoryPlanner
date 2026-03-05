@@ -9,7 +9,7 @@ services:
     name: satisfactory-planner
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build && npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all
+    buildCommand: npm install && npm run build && npx sequelize-cli db:migrate && npm run db:download && npx sequelize-cli db:seed:all
     startCommand: npm run start
     envVars:
       - key: NODE_ENV
