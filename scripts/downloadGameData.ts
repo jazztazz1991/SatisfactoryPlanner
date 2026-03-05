@@ -32,6 +32,7 @@ function download(url: string, dest: string): Promise<void> {
 }
 
 async function main() {
+  fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
   console.log(`Downloading game data from:\n  ${DATA_URL}`);
   await download(DATA_URL, OUTPUT_PATH);
   const stat = fs.statSync(OUTPUT_PATH);
