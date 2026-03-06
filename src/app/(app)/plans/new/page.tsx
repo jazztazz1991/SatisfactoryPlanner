@@ -3,13 +3,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/shared/Input";
 import { Button } from "@/components/shared/Button";
-import { SPACE_ELEVATOR_TEMPLATES } from "@/domain/templates/spaceElevatorTemplates";
+import { TierPicker } from "@/components/shared/TierPicker";
+import { SPACE_ELEVATOR_TEMPLATES, TEMPLATE_MAP } from "@/domain/templates/spaceElevatorTemplates";
 
 export default function NewPlanPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [templateKey, setTemplateKey] = useState<string | null>(null);
+  const [maxTier, setMaxTier] = useState(9);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +24,7 @@ export default function NewPlanPage() {
       const res = await fetch("/api/plans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description: description || null, templateKey }),
+        body: JSON.stringify({ name, description: description || null, templateKey, maxTier }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -71,7 +73,7 @@ export default function NewPlanPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
-              onClick={() => setTemplateKey(null)}
+              onClick={() => { setTemplateKey(null); setMaxTier(9); }}
               className={`rounded-lg border p-3 text-left text-sm transition-colors ${
                 templateKey === null
                   ? "border-orange-500 bg-orange-500/10 text-white"
@@ -85,7 +87,7 @@ export default function NewPlanPage() {
               <button
                 key={tmpl.key}
                 type="button"
-                onClick={() => setTemplateKey(tmpl.key)}
+                onClick={() => { setTemplateKey(tmpl.key); setMaxTier(tmpl.maxTier); }}
                 className={`rounded-lg border p-3 text-left text-sm transition-colors ${
                   templateKey === tmpl.key
                     ? "border-orange-500 bg-orange-500/10 text-white"
@@ -97,6 +99,17 @@ export default function NewPlanPage() {
               </button>
             ))}
           </div>
+        </fieldset>
+
+        {/* Milestone tier selector */}
+        <fieldset>
+          <legend className="mb-3 text-sm font-medium text-gray-300">
+            Max Milestone Tier
+          </legend>
+          <TierPicker value={maxTier} onChange={setMaxTier} />
+          <p className="mt-2 text-xs text-gray-500">
+            Only recipes and buildings unlocked up to this tier will be used.
+          </p>
         </fieldset>
 
         <div className="flex gap-3">

@@ -124,6 +124,21 @@ test.describe("new plan wizard", () => {
     await expect(templateButton).toBeVisible();
   });
 
+  test("shows milestone tier picker with all tiers", async ({ page }) => {
+    await page.goto("/plans/new");
+    await expect(page.getByText("Max Milestone Tier")).toBeVisible();
+    // Tier 0 through 9 buttons should be visible
+    for (let i = 0; i <= 9; i++) {
+      await expect(page.getByRole("button", { name: `Tier ${i}` })).toBeVisible();
+    }
+  });
+
+  test("tier 9 is selected by default", async ({ page }) => {
+    await page.goto("/plans/new");
+    const tier9 = page.getByRole("button", { name: "Tier 9" });
+    await expect(tier9).toHaveAttribute("aria-pressed", "true");
+  });
+
   test("Cancel button returns to dashboard", async ({ page }) => {
     await page.goto("/plans/new");
     await page.getByRole("button", { name: "Cancel" }).click();
@@ -165,6 +180,14 @@ test.describe("planner page", () => {
     await expect(page.getByRole("button", { name: "Tree" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Factory" })).toBeVisible();
     await expect(page.getByRole("button", { name: /calculate/i })).toBeVisible();
+  });
+
+  test("toolbar shows tier selector", async ({ page }) => {
+    await page.goto(`/plans/${planId}`);
+    const tierSelect = page.locator("select");
+    await expect(tierSelect).toBeVisible();
+    // Default value should be 9 (max)
+    await expect(tierSelect).toHaveValue("9");
   });
 
   test("sidebar shows Add Recipe section", async ({ page }) => {
@@ -327,6 +350,42 @@ test.describe("planner page", () => {
     await expect(page.getByText("Share Plan")).toBeVisible();
     await page.getByLabel("Close share dialog").click();
     await expect(page.getByText("Share Plan")).not.toBeVisible();
+  });
+
+  // ── Controls help panel ─────────────────────────────────────────────────
+
+  test("? button opens controls panel with view-specific content", async ({ page }) => {
+    await page.goto(`/plans/${planId}`);
+    const helpButton = page.getByRole("button", { name: /show controls/i });
+    await expect(helpButton).toBeVisible();
+
+    // Open controls panel (default view is graph)
+    await helpButton.click();
+    await expect(page.getByText("Graph Controls")).toBeVisible();
+    await expect(page.getByText("Navigation")).toBeVisible();
+
+    // Close with button
+    await helpButton.click();
+    await expect(page.getByText("Graph Controls")).not.toBeVisible();
+  });
+
+  test("controls panel updates when view changes", async ({ page }) => {
+    await page.route(`**/api/plans/${planId}/calculate`, (route) =>
+      route.fulfill({ json: MOCK_CALCULATE_RESULT })
+    );
+
+    await page.goto(`/plans/${planId}`);
+    await page.getByRole("button", { name: /calculate/i }).click();
+    await page.getByRole("tree").waitFor({ timeout: 10_000 });
+
+    // Open controls in Tree view
+    await page.getByRole("button", { name: /show controls/i }).click();
+    await expect(page.getByText("Tree Controls")).toBeVisible();
+
+    // Switch to Factory view — panel content should update
+    await page.getByRole("button", { name: "Factory" }).click();
+    await expect(page.getByText("Factory Controls")).toBeVisible();
+    await expect(page.getByText("Buildings")).toBeVisible();
   });
 
   // ── View switching round-trip ─────────────────────────────────────────────

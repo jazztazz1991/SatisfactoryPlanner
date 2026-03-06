@@ -5,6 +5,7 @@ export const createPlanSchema = z.object({
   description: z.string().max(500).nullable().optional(),
   viewMode: z.enum(["graph", "tree"]).optional().default("graph"),
   templateKey: z.string().nullable().optional(),
+  maxTier: z.number().int().min(0).max(9).optional().default(9),
 });
 
 export const updatePlanSchema = z.object({
@@ -13,6 +14,11 @@ export const updatePlanSchema = z.object({
   viewMode: z.enum(["graph", "tree"]).optional(),
   canvasViewport: z
     .object({ x: z.number(), y: z.number(), zoom: z.number() })
+    .nullable()
+    .optional(),
+  maxTier: z.number().int().min(0).max(9).optional(),
+  factoryNodePositions: z
+    .record(z.string(), z.object({ x: z.number(), y: z.number() }))
     .nullable()
     .optional(),
 });

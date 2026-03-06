@@ -34,7 +34,20 @@
       "Bash(npx vitest run src/domain/factory/beltRouting.test.ts)",
       "Bash(npx vitest run src/components/planner/factory/nodes/SplitterMergerNode.test.tsx)",
       "Bash(npx vitest run src/domain/factory/manifoldLayout.test.ts)",
-      "Bash(xargs -I {} basename {})"
+      "Bash(xargs -I {} basename {})",
+      "Bash(python3:*)",
+      "Bash(xargs grep -l \"belt\\\\|conveyor\" --ignore-case)",
+      "Bash(xargs grep -i \"belt\")",
+      "Bash(npx vitest run src/domain/progression/)",
+      "Bash(npx vitest run --reporter=verbose)",
+      "Bash(npx vitest run src/components/shared/TierPicker.test.tsx)",
+      "Bash(npx vitest run src/components/planner/sidebar/RecipePicker.test.tsx)",
+      "Bash(xargs grep -l \"onSuccess\\\\|onError\\\\|invalidateQueries\")",
+      "Bash(xargs grep -l \"IngotIron\\\\|IronPlate_C\\\\|IronRod\")",
+      "Bash(xargs grep -l \"chevron\\\\|ChevronDown\\\\|ChevronUp\\\\|expand\")",
+      "Bash(xargs grep -l \"expand\\\\|collapse\\\\|toggle\")",
+      "Bash(xargs grep -l \"useState.*collapse\\\\|useState.*expand\\\\|useState.*open\")",
+      "Bash(npx vitest run src/components/planner/ControlsPanel.test.tsx)"
     ]
   }
 }

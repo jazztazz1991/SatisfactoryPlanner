@@ -20,6 +20,7 @@ interface CanvasState {
   nodes: Node[];
   edges: Edge[];
   solverResult: ISolverOutput | null;
+  maxTier: number;
   selectedNodeId: string | null;
 
   // Collaboration state
@@ -31,6 +32,7 @@ interface CanvasState {
   setEdges: (edges: Edge[]) => void;
   updateNodePosition: (id: string, x: number, y: number) => void;
   setSolverResult: (result: ISolverOutput | null) => void;
+  setMaxTier: (tier: number) => void;
   setSelectedNodeId: (id: string | null) => void;
 
   // Collaboration actions
@@ -46,6 +48,7 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   nodes: [],
   edges: [],
   solverResult: null,
+  maxTier: 9,
   selectedNodeId: null,
   collaborators: [],
   remoteCursors: new Map(),
@@ -62,6 +65,7 @@ export const useCanvasStore = create<CanvasState>((set) => ({
     })),
 
   setSolverResult: (result) => set({ solverResult: result }),
+  setMaxTier: (tier) => set({ maxTier: tier }),
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
   setCollaborators: (users) => set({ collaborators: users }),
@@ -84,6 +88,7 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       nodes: [],
       edges: [],
       solverResult: null,
+      maxTier: 9,
       selectedNodeId: null,
       collaborators: [],
       remoteCursors: new Map(),

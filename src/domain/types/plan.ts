@@ -11,6 +11,8 @@ export interface IPlan {
   canvasViewport: { x: number; y: number; zoom: number } | null;
   shareToken: string | null;
   shareRole: CollaboratorRole | null;
+  maxTier: number;
+  factoryNodePositions: Record<string, { x: number; y: number }> | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -59,3 +61,8 @@ export interface IPlanCollaborator {
 }
 
 export type PlanAccessRole = "owner" | "editor" | "viewer";
+
+export interface IPlanWithRole extends IPlan {
+  accessRole: PlanAccessRole;
+  ownerName?: string | null;
+}

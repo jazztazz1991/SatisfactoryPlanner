@@ -7,6 +7,7 @@ import {
   createSplitterManifold,
   createMergerManifold,
 } from "@/domain/factory/manifoldLayout";
+import { getMaxBeltRate } from "@/domain/progression/beltConstraints";
 
 // ─── Belt tier ───────────────────────────────────────────────────────────────
 
@@ -15,13 +16,15 @@ const BELT_TIERS = [
   { maxRate: 120, tier: 2 },
   { maxRate: 270, tier: 3 },
   { maxRate: 480, tier: 4 },
+  { maxRate: 780, tier: 5 },
+  { maxRate: 1320, tier: 6 },
 ] as const;
 
-export function getBeltTier(rate: number): 1 | 2 | 3 | 4 | 5 {
+export function getBeltTier(rate: number): 1 | 2 | 3 | 4 | 5 | 6 {
   for (const { maxRate, tier } of BELT_TIERS) {
     if (rate <= maxRate) return tier;
   }
-  return 5;
+  return 6;
 }
 
 // ─── Grid constants ─────────────────────────────────────────────────────────
@@ -57,7 +60,13 @@ export interface FactoryResourceNodeData {
 
 // ─── Main layout function ────────────────────────────────────────────────────
 
-export function solverOutputToBlueprintFlow(result: ISolverOutput): { nodes: Node[]; edges: Edge[] } {
+export interface BlueprintFlowOptions {
+  maxTier?: number;
+}
+
+export function solverOutputToBlueprintFlow(result: ISolverOutput, options: BlueprintFlowOptions = {}): { nodes: Node[]; edges: Edge[] } {
+  const maxTier = options.maxTier ?? 9;
+  const maxBeltRate = getMaxBeltRate(maxTier);
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
@@ -93,9 +102,61 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput): { nodes: Nod
     columns.get(col)!.push(step);
   });
 
-  // ─── Machine nodes — vertical stacking ───────────────────────────────────
+  // ─── Barycentric ordering: sort steps within columns to minimize crossings ─
+
+  // Build a map of which steps consume items produced by which other steps
+  const consumerStepsOf = new Map<string, string[]>(); // recipe → list of consumer recipes
+  result.steps.forEach((step) => {
+    step.inputs.forEach((input) => {
+      const producer = producedBy.get(input.itemClassName);
+      if (producer && stepIds.has(producer)) {
+        const list = consumerStepsOf.get(producer) ?? [];
+        list.push(step.recipeClassName);
+        consumerStepsOf.set(producer, list);
+      }
+    });
+  });
 
   const sortedDepths = [...columns.keys()].sort((a, b) => a - b);
+
+  // Process right-to-left: assign a sort index to each step based on its
+  // consumers' positions. Steps feeding top consumers go to the top.
+  const stepSortWeight = new Map<string, number>();
+
+  // Rightmost column gets initial weights based on their original order
+  for (let di = sortedDepths.length - 1; di >= 0; di--) {
+    const depth = sortedDepths[di];
+    const steps = columns.get(depth)!;
+
+    if (di === sortedDepths.length - 1) {
+      // Rightmost column: assign sequential weights
+      steps.forEach((s, i) => stepSortWeight.set(s.recipeClassName, i));
+    } else {
+      // For each step, compute average weight of its consumers
+      steps.forEach((s) => {
+        const consumers = consumerStepsOf.get(s.recipeClassName) ?? [];
+        if (consumers.length > 0) {
+          const avgWeight = consumers.reduce(
+            (sum, c) => sum + (stepSortWeight.get(c) ?? 0), 0
+          ) / consumers.length;
+          stepSortWeight.set(s.recipeClassName, avgWeight);
+        } else {
+          stepSortWeight.set(s.recipeClassName, 0);
+        }
+      });
+    }
+
+    // Sort this column's steps by their computed weight
+    steps.sort((a, b) =>
+      (stepSortWeight.get(a.recipeClassName) ?? 0) -
+      (stepSortWeight.get(b.recipeClassName) ?? 0)
+    );
+
+    // Re-assign sequential weights after sorting (for use by the next column left)
+    steps.forEach((s, i) => stepSortWeight.set(s.recipeClassName, i));
+  }
+
+  // ─── Machine nodes — vertical stacking ───────────────────────────────────
 
   const stepMachineIds = new Map<string, string[]>();
   // Track machine Y positions per step (needed for manifold splitter alignment)
@@ -243,6 +304,7 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput): { nodes: Nod
           targetNodeId: "__placeholder__",
           targetHandleId: `in-${itemClassName}`,
           mergerIdStart: mergerIdx,
+          maxBeltRate,
         });
 
         mergerIdx += producerNodeIds.length;
@@ -296,6 +358,7 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput): { nodes: Nod
           sourceNodeId: effectiveSourceId,
           sourceHandleId: effectiveSourceHandle,
           splitterIdStart: splitterIdx,
+          maxBeltRate,
         });
 
         splitterIdx += consumerIds.length;
@@ -310,7 +373,7 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput): { nodes: Nod
           target: consumerIds[0],
           targetHandle: `in-${itemClassName}`,
           type: "belt",
-          data: { itemName, rate: consumer.rate, beltTier: getBeltTier(consumer.rate), laneIndex: 0, laneCount: 1 },
+          data: { itemName, rate: consumer.rate, beltTier: getBeltTier(consumer.rate), overCapacity: consumer.rate > maxBeltRate, laneIndex: 0, laneCount: 1 },
         });
       }
     } else if (consumers.length > 1) {
@@ -360,7 +423,7 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput): { nodes: Nod
         target: interStepSplitterIds[0],
         targetHandle: `bus-in-${itemClassName}`,
         type: "belt",
-        data: { itemName, rate: flow.totalRate, beltTier: getBeltTier(flow.totalRate), laneIndex: 0, laneCount: 1 },
+        data: { itemName, rate: flow.totalRate, beltTier: getBeltTier(flow.totalRate), overCapacity: flow.totalRate > maxBeltRate, laneIndex: 0, laneCount: 1 },
       });
 
       // Chain inter-step splitters
@@ -373,7 +436,7 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput): { nodes: Nod
           target: interStepSplitterIds[ci + 1],
           targetHandle: `bus-in-${itemClassName}`,
           type: "belt",
-          data: { itemName, rate: remainingRate, beltTier: getBeltTier(remainingRate), laneIndex: 0, laneCount: 1 },
+          data: { itemName, rate: remainingRate, beltTier: getBeltTier(remainingRate), overCapacity: remainingRate > maxBeltRate, laneIndex: 0, laneCount: 1 },
         });
       }
 
@@ -401,6 +464,7 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput): { nodes: Nod
             sourceNodeId: interStepSplitterIds[ci],
             sourceHandleId: `branch-out-${itemClassName}`,
             splitterIdStart: splitterIdx,
+            maxBeltRate,
           });
 
           splitterIdx += consumerIds.length;
@@ -415,7 +479,7 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput): { nodes: Nod
             target: consumerIds[0],
             targetHandle: `in-${itemClassName}`,
             type: "belt",
-            data: { itemName, rate: consumer.rate, beltTier: getBeltTier(consumer.rate), laneIndex: 0, laneCount: 1 },
+            data: { itemName, rate: consumer.rate, beltTier: getBeltTier(consumer.rate), overCapacity: consumer.rate > maxBeltRate, laneIndex: 0, laneCount: 1 },
           });
         }
       }

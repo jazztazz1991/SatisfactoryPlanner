@@ -11,13 +11,15 @@ const BELT_TIERS = [
   { maxRate: 120, tier: 2 },
   { maxRate: 270, tier: 3 },
   { maxRate: 480, tier: 4 },
+  { maxRate: 780, tier: 5 },
+  { maxRate: 1320, tier: 6 },
 ] as const;
 
-function getBeltTier(rate: number): 1 | 2 | 3 | 4 | 5 {
+function getBeltTier(rate: number): 1 | 2 | 3 | 4 | 5 | 6 {
   for (const { maxRate, tier } of BELT_TIERS) {
     if (rate <= maxRate) return tier;
   }
-  return 5;
+  return 6;
 }
 
 // ─── Item flow map ──────────────────────────────────────────────────────────
@@ -105,6 +107,7 @@ export interface SplitterManifoldOptions {
   sourceNodeId: string;
   sourceHandleId: string;
   splitterIdStart: number;
+  maxBeltRate?: number;
 }
 
 /**
@@ -117,6 +120,7 @@ export function createSplitterManifold(opts: SplitterManifoldOptions): { nodes: 
   const {
     consumerIds, busX, machineYPositions, itemClassName, itemName,
     totalRate, sourceNodeId, sourceHandleId, splitterIdStart,
+    maxBeltRate = Infinity,
   } = opts;
   const N = consumerIds.length;
   const ratePerMachine = totalRate / N;
@@ -145,7 +149,7 @@ export function createSplitterManifold(opts: SplitterManifoldOptions): { nodes: 
     target: splitterIds[0],
     targetHandle: `bus-in-${itemClassName}`,
     type: "belt",
-    data: { itemName, rate: totalRate, beltTier: getBeltTier(totalRate), laneIndex: 0, laneCount: 1 },
+    data: { itemName, rate: totalRate, beltTier: getBeltTier(totalRate), overCapacity: totalRate > maxBeltRate, laneIndex: 0, laneCount: 1 },
   });
 
   // Bus chain: S[i] → S[i+1]
@@ -158,7 +162,7 @@ export function createSplitterManifold(opts: SplitterManifoldOptions): { nodes: 
       target: splitterIds[i + 1],
       targetHandle: `bus-in-${itemClassName}`,
       type: "belt",
-      data: { itemName, rate: busRate, beltTier: getBeltTier(busRate), laneIndex: 0, laneCount: 1 },
+      data: { itemName, rate: busRate, beltTier: getBeltTier(busRate), overCapacity: busRate > maxBeltRate, laneIndex: 0, laneCount: 1 },
     });
   }
 
@@ -171,7 +175,7 @@ export function createSplitterManifold(opts: SplitterManifoldOptions): { nodes: 
       target: consumerIds[i],
       targetHandle: `in-${itemClassName}`,
       type: "belt",
-      data: { itemName, rate: ratePerMachine, beltTier: getBeltTier(ratePerMachine), laneIndex: 0, laneCount: 1 },
+      data: { itemName, rate: ratePerMachine, beltTier: getBeltTier(ratePerMachine), overCapacity: ratePerMachine > maxBeltRate, laneIndex: 0, laneCount: 1 },
     });
   }
 
@@ -190,6 +194,7 @@ export interface MergerManifoldOptions {
   targetNodeId: string;
   targetHandleId: string;
   mergerIdStart: number;
+  maxBeltRate?: number;
 }
 
 /**
@@ -202,6 +207,7 @@ export function createMergerManifold(opts: MergerManifoldOptions): { nodes: Node
   const {
     producerIds, busX, machineYPositions, itemClassName, itemName,
     totalRate, targetNodeId, targetHandleId, mergerIdStart,
+    maxBeltRate = Infinity,
   } = opts;
   const N = producerIds.length;
   const ratePerMachine = totalRate / N;
@@ -231,7 +237,7 @@ export function createMergerManifold(opts: MergerManifoldOptions): { nodes: Node
       target: mergerIds[i],
       targetHandle: `branch-in-${itemClassName}`,
       type: "belt",
-      data: { itemName, rate: ratePerMachine, beltTier: getBeltTier(ratePerMachine), laneIndex: 0, laneCount: 1 },
+      data: { itemName, rate: ratePerMachine, beltTier: getBeltTier(ratePerMachine), overCapacity: ratePerMachine > maxBeltRate, laneIndex: 0, laneCount: 1 },
     });
   }
 
@@ -245,7 +251,7 @@ export function createMergerManifold(opts: MergerManifoldOptions): { nodes: Node
       target: mergerIds[i + 1],
       targetHandle: `bus-in-${itemClassName}`,
       type: "belt",
-      data: { itemName, rate: busRate, beltTier: getBeltTier(busRate), laneIndex: 0, laneCount: 1 },
+      data: { itemName, rate: busRate, beltTier: getBeltTier(busRate), overCapacity: busRate > maxBeltRate, laneIndex: 0, laneCount: 1 },
     });
   }
 
@@ -257,7 +263,7 @@ export function createMergerManifold(opts: MergerManifoldOptions): { nodes: Node
     target: targetNodeId,
     targetHandle: targetHandleId,
     type: "belt",
-    data: { itemName, rate: totalRate, beltTier: getBeltTier(totalRate), laneIndex: 0, laneCount: 1 },
+    data: { itemName, rate: totalRate, beltTier: getBeltTier(totalRate), overCapacity: totalRate > maxBeltRate, laneIndex: 0, laneCount: 1 },
   });
 
   return { nodes, edges };

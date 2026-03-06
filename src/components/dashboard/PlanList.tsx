@@ -3,9 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlanCard } from "./PlanCard";
 import { Spinner } from "@/components/shared/Spinner";
 import { ErrorMessage } from "@/components/shared/ErrorMessage";
-import type { IPlan } from "@/domain/types/plan";
+import type { IPlanWithRole } from "@/domain/types/plan";
 
-async function fetchPlans(): Promise<IPlan[]> {
+async function fetchPlans(): Promise<IPlanWithRole[]> {
   const res = await fetch("/api/plans");
   if (!res.ok) throw new Error("Failed to load plans");
   return res.json();
@@ -37,15 +37,32 @@ export function PlanList() {
     );
   }
 
+  const ownedPlans = data.filter((p) => p.accessRole === "owner");
+  const sharedPlans = data.filter((p) => p.accessRole !== "owner");
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {data.map((plan) => (
-        <PlanCard
-          key={plan.id}
-          plan={plan}
-          onDelete={(id) => deleteMutation.mutate(id)}
-        />
-      ))}
+    <div className="flex flex-col gap-8">
+      {ownedPlans.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {ownedPlans.map((plan) => (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              onDelete={(id) => deleteMutation.mutate(id)}
+            />
+          ))}
+        </div>
+      )}
+      {sharedPlans.length > 0 && (
+        <div>
+          <h2 className="mb-4 text-lg font-semibold text-gray-300">Shared with me</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {sharedPlans.map((plan) => (
+              <PlanCard key={plan.id} plan={plan} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

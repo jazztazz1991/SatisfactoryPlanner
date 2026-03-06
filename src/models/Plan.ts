@@ -48,4 +48,13 @@ export class Plan extends Model {
 
   @Column({ type: DataType.STRING(20), allowNull: true })
   declare shareRole: "editor" | "viewer" | null;
+
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 9 })
+  declare maxTier: number;
+
+  @Column({ type: DataType.JSONB, allowNull: true })
+  declare savedCalculation: object | null;
+
+  @Column({ type: DataType.JSONB, allowNull: true })
+  declare factoryNodePositions: Record<string, { x: number; y: number }> | null;
 }

@@ -9,6 +9,13 @@ vi.mock("@tanstack/react-query", () => ({
   useQuery: vi.fn(),
 }));
 
+vi.mock("@/domain/progression/tierRecipeMap", () => ({
+  getAvailableRecipes: () => new Set([
+    "Recipe_IronIngot_C",
+    "Recipe_Alternate_IronIngot_C",
+  ]),
+}));
+
 const mockRecipes: IRecipe[] = [
   {
     className: "Recipe_IronIngot_C",

@@ -1,6 +1,6 @@
 "use client";
-import { useState, startTransition } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect, useRef, useCallback, startTransition } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCanvasStore } from "@/store/canvasStore";
 import { PlanCanvas } from "./canvas/PlanCanvas";
 import { ProductionTree } from "./tree/ProductionTree";
@@ -9,13 +9,15 @@ import { TargetList } from "./targets/TargetList";
 import { RecipePicker } from "./sidebar/RecipePicker";
 import { NodeInspector } from "./sidebar/NodeInspector";
 import { ShareDialog } from "./ShareDialog";
+import { ControlsPanel } from "./ControlsPanel";
 import { PresenceAvatars } from "./PresenceAvatars";
 import { RemoteCursors } from "./RemoteCursors";
 import { useCollaboration } from "@/hooks/useCollaboration";
 import { useCursorTracking } from "@/hooks/useCursors";
 import { Button } from "@/components/shared/Button";
-import type { ViewMode, CollaboratorRole } from "@/domain/types/plan";
+import type { ViewMode, CollaboratorRole, IPlanTarget, IPlan } from "@/domain/types/plan";
 import type { ISolverOutput, IProductionStep, IRawResourceRequirement } from "@/domain/types/solver";
+import type { IRecipe } from "@/domain/types/game";
 import type { Node, Edge } from "@xyflow/react";
 
 function solverOutputToGraph(result: ISolverOutput): { nodes: Node[]; edges: Edge[] } {
@@ -122,6 +124,7 @@ type ShellViewMode = ViewMode | "factory";
 interface PlannerShellProps {
   planId: string;
   initialViewMode: ViewMode;
+  maxTier?: number;
   shareToken?: string | null;
   shareRole?: CollaboratorRole | null;
 }
@@ -132,24 +135,161 @@ async function calculate(planId: string): Promise<ISolverOutput> {
   return res.json();
 }
 
-export function PlannerShell({ planId, initialViewMode, shareToken, shareRole }: PlannerShellProps) {
+export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier = 9, shareToken, shareRole }: PlannerShellProps) {
   const [viewMode, setViewMode] = useState<ShellViewMode>(initialViewMode);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const { setSolverResult, setNodes, setEdges, solverResult, nodes } = useCanvasStore();
+  const [controlsOpen, setControlsOpen] = useState(false);
+  const { setSolverResult, setMaxTier, setNodes, setEdges, solverResult, nodes, maxTier } = useCanvasStore();
+  const queryClient = useQueryClient();
+
+  useEffect(() => { setMaxTier(initialMaxTier); }, [initialMaxTier, setMaxTier]);
+
+  // Load saved calculation and factory node positions on mount
+  const [factoryPositions, setFactoryPositions] = useState<Record<string, { x: number; y: number }> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetch(`/api/plans/${planId}/calculate`).then((res) => (res.ok ? res.json() : null)),
+      fetch(`/api/plans/${planId}`).then((res) => (res.ok ? res.json() : null)),
+    ])
+      .then(([saved, plan]: [ISolverOutput | null, IPlan | null]) => {
+        if (cancelled) return;
+        if (saved) setSolverResult(saved);
+        if (plan?.factoryNodePositions) {
+          setFactoryPositions(plan.factoryNodePositions);
+        }
+      })
+      .catch(() => { /* ignore — user can re-calculate manually */ });
+    return () => { cancelled = true; };
+  }, [planId, setSolverResult]);
+
+  // Save factory node positions (debounced)
+  const factoryPositionTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const saveFactoryPositions = useCallback(
+    (positions: Record<string, { x: number; y: number }>) => {
+      setFactoryPositions(positions);
+      clearTimeout(factoryPositionTimer.current);
+      factoryPositionTimer.current = setTimeout(() => {
+        fetch(`/api/plans/${planId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ factoryNodePositions: positions }),
+        }).catch(() => { /* best-effort save */ });
+      }, 500);
+    },
+    [planId]
+  );
+
+  // Subscribe to targets so we can auto-recalculate when they change
+  const { data: targets } = useQuery<IPlanTarget[]>({
+    queryKey: ["targets", planId],
+    queryFn: async () => {
+      const res = await fetch(`/api/plans/${planId}/targets`);
+      if (!res.ok) throw new Error("Failed to fetch targets");
+      return res.json();
+    },
+  });
+
+  // Auto-recalculate when targets or tier change (debounced, skip initial mount)
+  const hasInitialized = useRef(false);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const targetsFingerprint = targets?.map((t) => `${t.itemClassName}:${t.targetRate}`).join(",") ?? "";
+
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      return;
+    }
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      calcMutation.mutate();
+    }, 500);
+    return () => clearTimeout(debounceTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetsFingerprint, maxTier]);
 
   const { sendCursorPosition, broadcastSolverResult } = useCollaboration(planId);
   const { onMouseMove } = useCursorTracking(sendCursorPosition);
 
+  // Track whether calc was triggered manually (to switch view) vs auto
+  const manualCalcRef = useRef(false);
+
   const calcMutation = useMutation({
     mutationFn: () => calculate(planId),
     onSuccess: (result) => {
-      // Store the result and show tree view immediately — don't block the
-      // main thread by converting to graph nodes here.
       setSolverResult(result);
       broadcastSolverResult(result);
-      setViewMode("tree");
+      // Clear saved factory positions so the fresh layout is used
+      setFactoryPositions(null);
+      // Only switch to tree view on manual Calculate click
+      if (manualCalcRef.current) {
+        setViewMode("tree");
+        manualCalcRef.current = false;
+      }
     },
   });
+
+  const handleManualCalculate = useCallback(() => {
+    manualCalcRef.current = true;
+    calcMutation.mutate();
+  }, [calcMutation]);
+
+  const tierMutation = useMutation({
+    mutationFn: (tier: number) =>
+      fetch(`/api/plans/${planId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maxTier: tier }),
+      }).then((res) => {
+        if (!res.ok) throw new Error("Failed to update tier");
+        return res.json();
+      }),
+    onSuccess: (_data, tier) => {
+      setMaxTier(tier);
+    },
+  });
+
+  const addTargetFromRecipe = useMutation({
+    mutationFn: (recipe: IRecipe) => {
+      const primaryOutput = recipe.products[0];
+      if (!primaryOutput) throw new Error("Recipe has no outputs");
+      const ratePerMin = (primaryOutput.amountPerCycle / recipe.timeSeconds) * 60;
+      return fetch(`/api/plans/${planId}/targets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          itemClassName: primaryOutput.itemClassName,
+          targetRate: Math.round(ratePerMin * 100) / 100,
+        }),
+      }).then((res) => {
+        if (!res.ok) throw new Error("Failed to create target");
+        return res.json();
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["targets", planId] }),
+  });
+
+  // Save graph node positions when dragged
+  const nodePositionTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const saveNodePosition = useCallback(
+    (nodeId: string, x: number, y: number) => {
+      const existing = nodePositionTimers.current.get(nodeId);
+      if (existing) clearTimeout(existing);
+      nodePositionTimers.current.set(
+        nodeId,
+        setTimeout(() => {
+          fetch(`/api/plans/${planId}/nodes/${nodeId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ positionX: x, positionY: y }),
+          }).catch(() => { /* best-effort save */ });
+          nodePositionTimers.current.delete(nodeId);
+        }, 300)
+      );
+    },
+    [planId]
+  );
 
   function switchToGraph() {
     // Only (re)build graph nodes when the user explicitly opens the graph view.
@@ -170,7 +310,7 @@ export function PlannerShell({ planId, initialViewMode, shareToken, shareRole }:
       <aside className="flex w-64 flex-col gap-2 border-r border-gray-800 bg-gray-900 overflow-y-auto">
         <TargetList planId={planId} />
         <div className="border-t border-gray-800" />
-        <RecipePicker onSelect={() => {}} />
+        <RecipePicker onSelect={(recipe) => addTargetFromRecipe.mutate(recipe)} />
         <div className="border-t border-gray-800" />
         <NodeInspector planId={planId} />
       </aside>
@@ -216,7 +356,7 @@ export function PlannerShell({ planId, initialViewMode, shareToken, shareRole }:
           </div>
           <Button
             size="sm"
-            onClick={() => calcMutation.mutate()}
+            onClick={handleManualCalculate}
             loading={calcMutation.isPending}
           >
             Calculate
@@ -224,6 +364,34 @@ export function PlannerShell({ planId, initialViewMode, shareToken, shareRole }:
           {calcMutation.isError && (
             <span className="text-xs text-red-400">Calculation failed</span>
           )}
+
+          <label className="flex items-center gap-1.5 text-xs text-gray-400">
+            Tier
+            <select
+              value={maxTier}
+              onChange={(e) => tierMutation.mutate(Number(e.target.value))}
+              className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-white"
+            >
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button
+            aria-pressed={controlsOpen}
+            aria-label={controlsOpen ? "Hide controls" : "Show controls"}
+            onClick={() => setControlsOpen((o) => !o)}
+            className={`rounded px-2 py-1.5 text-xs font-medium transition-colors ${
+              controlsOpen
+                ? "bg-orange-500 text-white"
+                : "bg-gray-800 text-gray-400 hover:text-white"
+            }`}
+          >
+            ?
+          </button>
 
           <div className="ml-auto flex items-center gap-2">
             <PresenceAvatars />
@@ -236,10 +404,19 @@ export function PlannerShell({ planId, initialViewMode, shareToken, shareRole }:
         {/* View */}
         <div className="relative flex-1 overflow-hidden" onMouseMove={onMouseMove}>
           <RemoteCursors />
+          {controlsOpen && (
+            <ControlsPanel
+              viewMode={viewMode}
+              onClose={() => setControlsOpen(false)}
+            />
+          )}
           {viewMode === "graph" ? (
-            <PlanCanvas planId={planId} />
+            <PlanCanvas planId={planId} onNodePositionChange={saveNodePosition} />
           ) : viewMode === "factory" ? (
-            <FactoryCanvas />
+            <FactoryCanvas
+              savedPositions={factoryPositions}
+              onNodePositionChange={saveFactoryPositions}
+            />
           ) : (
             <ProductionTree />
           )}

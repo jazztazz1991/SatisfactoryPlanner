@@ -35,26 +35,38 @@ function snapToGrid(value: number): number {
   return Math.round(value / CELL_PX) * CELL_PX;
 }
 
-export function FactoryCanvas() {
-  const { solverResult } = useCanvasStore();
+interface FactoryCanvasProps {
+  savedPositions?: Record<string, { x: number; y: number }> | null;
+  onNodePositionChange?: (positions: Record<string, { x: number; y: number }>) => void;
+}
+
+export function FactoryCanvas({ savedPositions, onNodePositionChange }: FactoryCanvasProps) {
+  const { solverResult, maxTier } = useCanvasStore();
 
   const layout = useMemo(() => {
     if (!solverResult) return null;
-    return solverOutputToBlueprintFlow(solverResult);
-  }, [solverResult]);
+    return solverOutputToBlueprintFlow(solverResult, { maxTier });
+  }, [solverResult, maxTier]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
     if (layout) {
-      setNodes(layout.nodes);
+      // Apply saved positions on top of auto-layout
+      const positioned = savedPositions
+        ? layout.nodes.map((n) => {
+            const saved = savedPositions[n.id];
+            return saved ? { ...n, position: saved } : n;
+          })
+        : layout.nodes;
+      setNodes(positioned);
       setEdges(layout.edges);
     } else {
       setNodes([]);
       setEdges([]);
     }
-  }, [layout, setNodes, setEdges]);
+  }, [layout, savedPositions, setNodes, setEdges]);
 
   const handleNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -76,6 +88,21 @@ export function FactoryCanvas() {
     [onNodesChange]
   );
 
+  const handleNodeDragStop = useCallback(() => {
+    if (!onNodePositionChange) return;
+    // Collect all current node positions into a map
+    const positions: Record<string, { x: number; y: number }> = {};
+    // nodes is from the closure; we read the latest via setNodes callback
+    setNodes((current) => {
+      for (const n of current) {
+        positions[n.id] = { x: n.position.x, y: n.position.y };
+      }
+      return current; // no mutation
+    });
+    // Small timeout to ensure setNodes callback has run
+    setTimeout(() => onNodePositionChange(positions), 0);
+  }, [onNodePositionChange, setNodes]);
+
   if (!solverResult) {
     return (
       <div className="flex h-full items-center justify-center text-gray-500">
@@ -91,6 +118,7 @@ export function FactoryCanvas() {
         edges={edges}
         onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeDragStop={handleNodeDragStop}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView

@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { PlanCard } from "./PlanCard";
-import type { IPlan } from "@/domain/types/plan";
+import type { IPlanWithRole } from "@/domain/types/plan";
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: { href: string; children: React.ReactNode; className?: string }) => (
@@ -11,7 +11,7 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-const plan: IPlan = {
+const plan: IPlanWithRole = {
   id: "plan-1",
   userId: "user-1",
   name: "Iron Factory",
@@ -21,8 +21,12 @@ const plan: IPlan = {
   canvasViewport: null,
   shareToken: null,
   shareRole: null,
+  maxTier: 9,
+  factoryNodePositions: null,
   createdAt: "2025-01-01T00:00:00.000Z",
   updatedAt: "2025-01-02T00:00:00.000Z",
+  accessRole: "owner",
+  ownerName: null,
 };
 
 describe("PlanCard", () => {
@@ -58,5 +62,16 @@ describe("PlanCard", () => {
   it("does not render description when null", () => {
     render(<PlanCard plan={{ ...plan, description: null }} />);
     expect(screen.queryByText("My iron production line")).not.toBeInTheDocument();
+  });
+
+  it("shows role badge for shared plans", () => {
+    render(<PlanCard plan={{ ...plan, accessRole: "editor", ownerName: "Alice" }} />);
+    expect(screen.getByText("editor")).toBeInTheDocument();
+    expect(screen.getByText("by Alice")).toBeInTheDocument();
+  });
+
+  it("does not show delete button on shared plans even with onDelete", () => {
+    render(<PlanCard plan={{ ...plan, accessRole: "viewer" }} onDelete={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
   });
 });

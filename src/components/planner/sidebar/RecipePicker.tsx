@@ -1,9 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { IRecipe } from "@/domain/types/game";
 import { Spinner } from "@/components/shared/Spinner";
 import { Input } from "@/components/shared/Input";
+import { useCanvasStore } from "@/store/canvasStore";
+import { getAvailableRecipes } from "@/domain/progression/tierRecipeMap";
 
 async function fetchRecipes(): Promise<IRecipe[]> {
   const res = await fetch("/api/game-data/recipes");
@@ -18,10 +20,13 @@ interface RecipePickerProps {
 export function RecipePicker({ onSelect }: RecipePickerProps) {
   const [search, setSearch] = useState("");
   const { data, isLoading } = useQuery({ queryKey: ["recipes"], queryFn: fetchRecipes });
+  const maxTier = useCanvasStore((s) => s.maxTier);
 
-  const filtered = (data ?? []).filter((r) =>
-    r.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const availableRecipes = useMemo(() => getAvailableRecipes(maxTier), [maxTier]);
+
+  const filtered = (data ?? [])
+    .filter((r) => availableRecipes.has(r.className))
+    .filter((r) => r.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="flex flex-col gap-3 p-3">

@@ -18,7 +18,7 @@ export default async function PlannerPage({ params }: Props) {
       <div className="border-b border-gray-800 bg-gray-900 px-6 py-2">
         <h1 className="text-sm font-semibold text-gray-200">{plan.name}</h1>
       </div>
-      <PlannerShell planId={planId} initialViewMode={plan.viewMode} />
+      <PlannerShell planId={planId} initialViewMode={plan.viewMode} maxTier={plan.maxTier} />
     </div>
   );
 }

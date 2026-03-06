@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getPlansByUser, createPlan } from "@/repositories/planRepository";
+import { getAllPlansForUser, createPlan } from "@/repositories/planRepository";
 import { createPlanSchema } from "@/domain/validation/planSchemas";
 import { ok, err, unauthorized } from "@/lib/apiResponse";
 import { TEMPLATE_MAP } from "@/domain/templates/spaceElevatorTemplates";
@@ -10,7 +10,7 @@ export async function GET() {
   if (!session?.user?.id) return unauthorized();
 
   try {
-    const plans = await getPlansByUser(session.user.id);
+    const plans = await getAllPlansForUser(session.user.id);
     return ok(plans);
   } catch (e) {
     console.error(e);

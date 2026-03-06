@@ -1,13 +1,20 @@
 import Link from "next/link";
-import type { IPlan } from "@/domain/types/plan";
+import type { IPlanWithRole, PlanAccessRole } from "@/domain/types/plan";
+
+const roleBadgeClasses: Record<PlanAccessRole, string> = {
+  owner: "",
+  editor: "bg-blue-500/20 text-blue-400",
+  viewer: "bg-gray-500/20 text-gray-400",
+};
 
 interface PlanCardProps {
-  plan: IPlan;
+  plan: IPlanWithRole;
   onDelete?: (id: string) => void;
 }
 
 export function PlanCard({ plan, onDelete }: PlanCardProps) {
   const updatedAt = new Date(plan.updatedAt).toLocaleDateString();
+  const isShared = plan.accessRole !== "owner";
 
   return (
     <article className="group flex flex-col gap-2 rounded-lg border border-gray-700 bg-gray-800 p-4 transition-colors hover:border-orange-500">
@@ -18,7 +25,12 @@ export function PlanCard({ plan, onDelete }: PlanCardProps) {
         >
           {plan.name}
         </Link>
-        {onDelete && (
+        {isShared && (
+          <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${roleBadgeClasses[plan.accessRole]}`}>
+            {plan.accessRole}
+          </span>
+        )}
+        {!isShared && onDelete && (
           <button
             aria-label={`Delete ${plan.name}`}
             onClick={() => onDelete(plan.id)}
@@ -35,6 +47,12 @@ export function PlanCard({ plan, onDelete }: PlanCardProps) {
         <span className="capitalize">{plan.viewMode}</span>
         <span>·</span>
         <span>Updated {updatedAt}</span>
+        {isShared && plan.ownerName && (
+          <>
+            <span>·</span>
+            <span>by {plan.ownerName}</span>
+          </>
+        )}
       </div>
     </article>
   );
