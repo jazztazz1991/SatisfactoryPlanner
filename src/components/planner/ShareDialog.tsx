@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/shared/Button";
 import type { IPlanCollaborator, CollaboratorRole } from "@/domain/types/plan";
 
@@ -23,7 +23,7 @@ export function ShareDialog({ planId, isOpen, onClose, shareToken, shareRole }: 
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  async function loadCollaborators() {
+  const loadCollaborators = useCallback(async () => {
     try {
       const res = await fetch(`/api/plans/${planId}/collaborators`);
       if (res.ok) {
@@ -33,12 +33,12 @@ export function ShareDialog({ planId, isOpen, onClose, shareToken, shareRole }: 
     } catch {
       // Ignore
     }
-  }
+  }, [planId]);
 
   // Load collaborators when dialog opens
-  if (isOpen && collaborators.length === 0) {
-    loadCollaborators();
-  }
+  useEffect(() => {
+    if (isOpen) loadCollaborators();
+  }, [isOpen, loadCollaborators]);
 
   if (!isOpen) return null;
 

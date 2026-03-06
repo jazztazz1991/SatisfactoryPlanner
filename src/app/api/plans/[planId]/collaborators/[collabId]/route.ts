@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import {
+  getCollaboratorById,
   updateCollaboratorRole,
   deleteCollaborator,
 } from "@/repositories/collaboratorRepository";
@@ -16,6 +17,10 @@ export async function PATCH(request: Request, { params }: Params) {
   const { planId, collabId } = await params;
   const { error } = await requirePlanAccess(planId, session.user.id, "owner");
   if (error) return error;
+
+  // Verify the collaborator belongs to this plan
+  const existing = await getCollaboratorById(collabId);
+  if (!existing || existing.planId !== planId) return err("Collaborator not found", 404);
 
   const body = await request.json().catch(() => null);
   const parsed = updateCollaboratorSchema.safeParse(body);
@@ -40,6 +45,10 @@ export async function DELETE(_req: Request, { params }: Params) {
   const { planId, collabId } = await params;
   const { error } = await requirePlanAccess(planId, session.user.id, "owner");
   if (error) return error;
+
+  // Verify the collaborator belongs to this plan
+  const existing = await getCollaboratorById(collabId);
+  if (!existing || existing.planId !== planId) return err("Collaborator not found", 404);
 
   try {
     const deleted = await deleteCollaborator(collabId);

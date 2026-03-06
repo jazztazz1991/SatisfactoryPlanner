@@ -377,33 +377,40 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput, options: Blue
         });
       }
     } else if (consumers.length > 1) {
-      // Multiple consumer steps → create inter-step splitter chain first
-      // Then each step may have its own intra-step manifold
+      // Multiple consumer steps → chain of N-1 splitters.
+      // Each splitter peels off one branch; the last consumer connects
+      // directly from the final splitter's bus-out (no extra node).
 
-      // Create one inter-step splitter per consumer step
-      // Position them in a small chain between source and first consumer
+      const splitterCount = consumers.length - 1; // N-1 splitters for N consumers
       const interStepSplitterIds: string[] = [];
-      const interSplitterStartIdx = splitterIdx;
 
-      // Find a reasonable Y position for the inter-step splitters
-      // Use Y positions based on each consumer step's first machine
-      const interSplitterYs: number[] = consumers.map((c) => {
+      // Compute Y positions: use each consumer step's first machine Y,
+      // but ensure no two splitters overlap by offsetting duplicates.
+      const rawYs: number[] = consumers.map((c) => {
         const ys = stepMachineYPositions.get(c.recipeClassName) ?? [0];
         return ys[0];
       });
+      const interSplitterYs: number[] = [];
+      const usedYSet = new Set<number>();
+      for (let ci = 0; ci < splitterCount; ci++) {
+        let y = rawYs[ci];
+        while (usedYSet.has(y)) {
+          y += SPLITTER_W * CELL_PX; // offset by one splitter height
+        }
+        usedYSet.add(y);
+        interSplitterYs.push(y);
+      }
 
-      // Position inter-step splitters in the column between source and first consumer
-      // Use the source's right edge area
+      // Position inter-step splitters midway between source and first consumer
       const sourceNode = nodes.find((n) => n.id === effectiveSourceId);
-      const firstConsumerStep = consumers[0];
-      const firstConsumerDepth = depthMap.get(firstConsumerStep.recipeClassName) ?? 0;
+      const firstConsumerDepth = depthMap.get(consumers[0].recipeClassName) ?? 0;
       const firstConsumerMachineX = columnMachineX.get(firstConsumerDepth) ?? 0;
 
       const interSplitterX = sourceNode
         ? Math.round(((sourceNode.position.x + firstConsumerMachineX * CELL_PX) / 2) / CELL_PX) * CELL_PX
         : 0;
 
-      for (let ci = 0; ci < consumers.length; ci++) {
+      for (let ci = 0; ci < splitterCount; ci++) {
         const interId = `bp-splitter-${splitterIdx++}`;
         interStepSplitterIds.push(interId);
 
@@ -426,8 +433,8 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput, options: Blue
         data: { itemName, rate: flow.totalRate, beltTier: getBeltTier(flow.totalRate), overCapacity: flow.totalRate > maxBeltRate, laneIndex: 0, laneCount: 1 },
       });
 
-      // Chain inter-step splitters
-      for (let ci = 0; ci < consumers.length - 1; ci++) {
+      // Chain inter-step splitters (only between the N-1 splitter nodes)
+      for (let ci = 0; ci < splitterCount - 1; ci++) {
         const remainingRate = flow.totalRate - consumers.slice(0, ci + 1).reduce((s, c) => s + c.rate, 0);
         edges.push({
           id: `e-${interStepSplitterIds[ci]}-bus-to-${interStepSplitterIds[ci + 1]}-${itemClassName}`,
@@ -440,10 +447,21 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput, options: Blue
         });
       }
 
-      // Each inter-step splitter → its consumer step
+      // Connect each consumer to its splitter.
+      // Consumers 0..N-2 use branch-out from their splitter.
+      // Consumer N-1 (last) uses bus-out from the last splitter (no extra node needed).
       for (let ci = 0; ci < consumers.length; ci++) {
         const consumer = consumers[ci];
         const consumerIds = consumer.machineIds;
+        const isLast = ci === consumers.length - 1;
+
+        // Determine which splitter node and handle feeds this consumer
+        const feedSplitterId = isLast
+          ? interStepSplitterIds[splitterCount - 1]
+          : interStepSplitterIds[ci];
+        const feedHandle = isLast
+          ? `bus-out-${itemClassName}`
+          : `branch-out-${itemClassName}`;
 
         if (consumerIds.length > 1) {
           // Intra-step splitter manifold
@@ -461,8 +479,8 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput, options: Blue
             itemClassName,
             itemName,
             totalRate: consumer.rate,
-            sourceNodeId: interStepSplitterIds[ci],
-            sourceHandleId: `branch-out-${itemClassName}`,
+            sourceNodeId: feedSplitterId,
+            sourceHandleId: feedHandle,
             splitterIdStart: splitterIdx,
             maxBeltRate,
           });
@@ -471,11 +489,11 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput, options: Blue
           nodes.push(...splitterResult.nodes);
           edges.push(...splitterResult.edges);
         } else if (consumerIds.length === 1) {
-          // Direct from inter-step splitter to single machine
+          // Direct from splitter to single machine
           edges.push({
-            id: `e-${interStepSplitterIds[ci]}-branch-to-${consumerIds[0]}-${itemClassName}`,
-            source: interStepSplitterIds[ci],
-            sourceHandle: `branch-out-${itemClassName}`,
+            id: `e-${feedSplitterId}-to-${consumerIds[0]}-${itemClassName}`,
+            source: feedSplitterId,
+            sourceHandle: feedHandle,
             target: consumerIds[0],
             targetHandle: `in-${itemClassName}`,
             type: "belt",

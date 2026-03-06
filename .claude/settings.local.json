@@ -47,7 +47,21 @@
       "Bash(xargs grep -l \"chevron\\\\|ChevronDown\\\\|ChevronUp\\\\|expand\")",
       "Bash(xargs grep -l \"expand\\\\|collapse\\\\|toggle\")",
       "Bash(xargs grep -l \"useState.*collapse\\\\|useState.*expand\\\\|useState.*open\")",
-      "Bash(npx vitest run src/components/planner/ControlsPanel.test.tsx)"
+      "Bash(npx vitest run src/components/planner/ControlsPanel.test.tsx)",
+      "Bash(npx vitest run src/components/planner/factory/factoryLayout.test.ts src/domain/factory/manifoldLayout.test.ts)",
+      "Bash(pg_isready -h localhost -p 5432)",
+      "Bash(psql -U postgres -h localhost -p 5432 -c \"\\\\l\")",
+      "Bash(PGPASSWORD=rootroot psql -U postgres -h localhost -p 5432 -c \"\\\\l\")",
+      "Bash(npm ls dotenv-cli)",
+      "Bash(npx tsx --require ./env-preload.ts -e \"console.log\\(''DATABASE_URL:'', process.env.DATABASE_URL ? ''SET'' : ''NOT SET''\\)\")",
+      "Bash(DOTENV_CONFIG_PATH=.env.local npx tsx --require dotenv/config -e \"console.log\\(''DATABASE_URL:'', process.env.DATABASE_URL ? ''SET'' : ''NOT SET''\\)\")",
+      "Bash(npm ls cross-env)",
+      "Bash(npx tsx --require dotenv/config -e \"console.log\\(''DATABASE_URL:'', process.env.DATABASE_URL ? ''SET'' : ''NOT SET''\\)\")",
+      "Bash(npx tsx --require ./env-preload.js -e \"console.log\\(''DATABASE_URL:'', process.env.DATABASE_URL ? ''SET'' : ''NOT SET''\\)\")",
+      "Bash(ls -la \"/c/Users/jazz_/Desktop/Web Development Projects/portfolioProjects/SatisfactoryPlanner/src/app/\\\\\\(app\\\\\\)/plans/\")",
+      "Bash(ls -la \"/c/Users/jazz_/Desktop/Web Development Projects/portfolioProjects/SatisfactoryPlanner/src/app/\\(app\\)/plans/\")",
+      "Bash(ls \"/c/Users/jazz_/Desktop/Web Development Projects/portfolioProjects/SatisfactoryPlanner/src/app/\\\\\\(app\\\\\\)/plans/join/\")",
+      "Bash(find \"/c/Users/jazz_/Desktop/Web Development Projects/portfolioProjects/SatisfactoryPlanner/src/app/\\(app\\)/plans/join\" -type f)"
     ]
   }
 }

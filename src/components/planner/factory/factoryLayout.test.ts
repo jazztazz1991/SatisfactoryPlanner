@@ -261,6 +261,103 @@ describe("solverOutputToBlueprintFlow", () => {
     expect(machines[2].position.y).toBeGreaterThan(machines[1].position.y);
   });
 
+  it("uses N-1 inter-step splitters for N consumer steps (no redundant last splitter)", () => {
+    // Iron Ingot → consumed by Iron Plate AND Iron Rod (2 consumer steps)
+    // Should create 1 inter-step splitter, not 2
+    const result: ISolverOutput = {
+      steps: [
+        {
+          recipeClassName: "Recipe_IronIngot_C",
+          recipeName: "Iron Ingot",
+          buildingClassName: "Desc_SmelterMk1_C",
+          buildingName: "Smelter",
+          machineCount: 1,
+          powerUsageKW: 4,
+          inputs: [{ itemClassName: "Desc_OreIron_C", itemName: "Iron Ore", rate: 30 }],
+          outputs: [{ itemClassName: "Desc_IronIngot_C", itemName: "Iron Ingot", rate: 30 }],
+        },
+        {
+          recipeClassName: "Recipe_IronPlate_C",
+          recipeName: "Iron Plate",
+          buildingClassName: "Desc_ConstructorMk1_C",
+          buildingName: "Constructor",
+          machineCount: 1,
+          powerUsageKW: 4,
+          inputs: [{ itemClassName: "Desc_IronIngot_C", itemName: "Iron Ingot", rate: 15 }],
+          outputs: [{ itemClassName: "Desc_IronPlate_C", itemName: "Iron Plate", rate: 10 }],
+        },
+        {
+          recipeClassName: "Recipe_IronRod_C",
+          recipeName: "Iron Rod",
+          buildingClassName: "Desc_ConstructorMk1_C",
+          buildingName: "Constructor",
+          machineCount: 1,
+          powerUsageKW: 4,
+          inputs: [{ itemClassName: "Desc_IronIngot_C", itemName: "Iron Ingot", rate: 15 }],
+          outputs: [{ itemClassName: "Desc_IronRod_C", itemName: "Iron Rod", rate: 15 }],
+        },
+      ],
+      rawResources: [{ itemClassName: "Desc_OreIron_C", itemName: "Iron Ore", rate: 30 }],
+      totalPowerKW: 12,
+    };
+
+    const { nodes } = solverOutputToBlueprintFlow(result);
+    // Iron Ingot has 2 consumer steps → should create exactly 1 inter-step splitter
+    const splitters = nodes.filter((n) =>
+      n.type === "splitterMerger" && (n.data as { kind: string }).kind === "splitter"
+    );
+    // Only the 1 inter-step splitter for Iron Ingot (no intra-step splitters needed since each consumer has 1 machine)
+    expect(splitters).toHaveLength(1);
+  });
+
+  it("no splitter/merger nodes overlap in position", () => {
+    // Use the shared-ingredient scenario that previously caused overlaps
+    const result: ISolverOutput = {
+      steps: [
+        {
+          recipeClassName: "Recipe_IronIngot_C",
+          recipeName: "Iron Ingot",
+          buildingClassName: "Desc_SmelterMk1_C",
+          buildingName: "Smelter",
+          machineCount: 2,
+          powerUsageKW: 8,
+          inputs: [{ itemClassName: "Desc_OreIron_C", itemName: "Iron Ore", rate: 60 }],
+          outputs: [{ itemClassName: "Desc_IronIngot_C", itemName: "Iron Ingot", rate: 60 }],
+        },
+        {
+          recipeClassName: "Recipe_IronPlate_C",
+          recipeName: "Iron Plate",
+          buildingClassName: "Desc_ConstructorMk1_C",
+          buildingName: "Constructor",
+          machineCount: 1,
+          powerUsageKW: 4,
+          inputs: [{ itemClassName: "Desc_IronIngot_C", itemName: "Iron Ingot", rate: 30 }],
+          outputs: [{ itemClassName: "Desc_IronPlate_C", itemName: "Iron Plate", rate: 20 }],
+        },
+        {
+          recipeClassName: "Recipe_IronRod_C",
+          recipeName: "Iron Rod",
+          buildingClassName: "Desc_ConstructorMk1_C",
+          buildingName: "Constructor",
+          machineCount: 1,
+          powerUsageKW: 4,
+          inputs: [{ itemClassName: "Desc_IronIngot_C", itemName: "Iron Ingot", rate: 30 }],
+          outputs: [{ itemClassName: "Desc_IronRod_C", itemName: "Iron Rod", rate: 15 }],
+        },
+      ],
+      rawResources: [{ itemClassName: "Desc_OreIron_C", itemName: "Iron Ore", rate: 60 }],
+      totalPowerKW: 16,
+    };
+
+    const { nodes } = solverOutputToBlueprintFlow(result);
+    const splitterMergers = nodes.filter((n) => n.type === "splitterMerger");
+
+    // Check no two splitter/merger nodes share the exact same position
+    const positions = splitterMergers.map((n) => `${n.position.x},${n.position.y}`);
+    const uniquePositions = new Set(positions);
+    expect(uniquePositions.size).toBe(positions.length);
+  });
+
   it("edges include laneIndex and laneCount in data", () => {
     const { edges } = solverOutputToBlueprintFlow(SINGLE_STEP);
     for (const edge of edges) {

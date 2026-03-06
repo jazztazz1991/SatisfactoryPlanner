@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 import type { ReactNode } from "react";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -16,6 +17,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </Link>
           <nav className="flex items-center gap-4 text-sm text-gray-300">
             <Link href="/dashboard" className="hover:text-white">Dashboard</Link>
+            <NotificationBell />
             <form action="/api/auth/signout" method="POST">
               <button type="submit" className="hover:text-white">Sign out</button>
             </form>
