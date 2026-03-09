@@ -61,7 +61,19 @@
       "Bash(ls -la \"/c/Users/jazz_/Desktop/Web Development Projects/portfolioProjects/SatisfactoryPlanner/src/app/\\\\\\(app\\\\\\)/plans/\")",
       "Bash(ls -la \"/c/Users/jazz_/Desktop/Web Development Projects/portfolioProjects/SatisfactoryPlanner/src/app/\\(app\\)/plans/\")",
       "Bash(ls \"/c/Users/jazz_/Desktop/Web Development Projects/portfolioProjects/SatisfactoryPlanner/src/app/\\\\\\(app\\\\\\)/plans/join/\")",
-      "Bash(find \"/c/Users/jazz_/Desktop/Web Development Projects/portfolioProjects/SatisfactoryPlanner/src/app/\\(app\\)/plans/join\" -type f)"
+      "Bash(find \"/c/Users/jazz_/Desktop/Web Development Projects/portfolioProjects/SatisfactoryPlanner/src/app/\\(app\\)/plans/join\" -type f)",
+      "Read(//c/Users/jazz_/Desktop/Web/ Development/ Projects/portfolioProjects/SatisfactoryPlanner/src/components/planner/**)",
+      "Read(//c/Users/jazz_/Desktop/Web/ Development/ Projects/portfolioProjects/SatisfactoryPlanner/src/components/planner/factory/**)",
+      "Read(//c/Users/jazz_/Desktop/Web/ Development/ Projects/portfolioProjects/SatisfactoryPlanner/**)",
+      "Read(//c/Users/jazz_/Desktop/Web/ Development/ Projects/portfolioProjects/SatisfactoryPlanner/src/store/**)",
+      "Bash(npx vitest run src/domain/factory/floorAssignment.test.ts)",
+      "Bash(npx vitest run src/components/planner/factory/FloorTabs.test.tsx src/components/planner/factory/FloorConfigPopover.test.tsx src/components/planner/factory/nodes/LiftNode.test.tsx)",
+      "Bash(npx vitest run src/components/planner/factory/FloorConfigPopover.test.tsx)",
+      "Bash(npx vitest run src/components/planner/factory/FloorConfigPopover.test.tsx src/components/planner/factory/FloorTabs.test.tsx src/components/planner/factory/nodes/LiftNode.test.tsx src/domain/factory/floorAssignment.test.ts)",
+      "Bash(npx vitest run src/domain/builder/)",
+      "Bash(grep '\"\"uuid\"\"' package.json)",
+      "Bash(npx vitest run src/domain/builder/connectionValidation.test.ts)",
+      "Bash(npx vitest run src/domain/builder/rateCalculation.test.ts)"
     ]
   }
 }

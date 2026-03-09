@@ -44,4 +44,17 @@ export class PlanEdge extends Model {
 
   @Column({ type: DataType.DECIMAL(10, 4), allowNull: false })
   declare rate: number;
+
+  @Column({
+    type: DataType.STRING(16),
+    allowNull: false,
+    defaultValue: "graph",
+  })
+  declare viewType: "graph" | "builder";
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare sourceHandle: string | null;
+
+  @Column({ type: DataType.STRING(255), allowNull: true })
+  declare targetHandle: string | null;
 }

@@ -40,7 +40,7 @@ export function BlueprintMachineNode({ data, selected }: NodeProps) {
           type="target"
           position={Position.Left}
           id={`in-${item}`}
-          style={{ top: (d.depthPx / (d.inputItems.length + 1)) * (i + 1) }}
+          style={{ top: (d.depthPx / (d.inputItems.length + 1)) * (i + 1), background: "#3b82f6", width: 8, height: 8 }}
         />
       ))}
 
@@ -50,7 +50,7 @@ export function BlueprintMachineNode({ data, selected }: NodeProps) {
           type="source"
           position={Position.Right}
           id={`out-${item}`}
-          style={{ top: (d.depthPx / (d.outputItems.length + 1)) * (i + 1) }}
+          style={{ top: (d.depthPx / (d.outputItems.length + 1)) * (i + 1), background: "#f97316", width: 8, height: 8 }}
         />
       ))}
     </div>

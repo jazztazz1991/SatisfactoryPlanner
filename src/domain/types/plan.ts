@@ -1,5 +1,6 @@
 export type ViewMode = "graph" | "tree";
-export type NodeType = "machine" | "resource" | "sink";
+export type NodeType = "machine" | "resource" | "sink" | "splitter" | "merger";
+export type NodeViewType = "graph" | "builder";
 
 export interface IPlan {
   id: string;
@@ -13,6 +14,7 @@ export interface IPlan {
   shareRole: CollaboratorRole | null;
   maxTier: number;
   factoryNodePositions: Record<string, { x: number; y: number }> | null;
+  floorConfig: { floorWidth: number; floorDepth: number } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +37,7 @@ export interface IPlanNode {
   positionX: number;
   positionY: number;
   nodeType: NodeType;
+  viewType: NodeViewType;
 }
 
 export interface IPlanEdge {
@@ -44,6 +47,9 @@ export interface IPlanEdge {
   targetNodeId: string;
   itemClassName: string;
   rate: number;
+  viewType: NodeViewType;
+  sourceHandle: string | null;
+  targetHandle: string | null;
 }
 
 export type CollaboratorRole = "editor" | "viewer";

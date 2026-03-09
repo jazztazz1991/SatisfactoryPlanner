@@ -17,7 +17,7 @@ export function MachineNode({ data, selected }: NodeProps) {
         selected ? "border-orange-500" : "border-gray-600"
       }`}
     >
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={Position.Top} style={{ background: "#3b82f6", width: 10, height: 10 }} />
       <div className="mb-1 font-semibold text-white">{d.recipeName}</div>
       {d.buildingName && (
         <div className="text-xs text-gray-400">{d.buildingName}</div>
@@ -27,7 +27,7 @@ export function MachineNode({ data, selected }: NodeProps) {
         <span>{d.overclockPercent}%</span>
         <span>{d.powerUsageKW.toFixed(1)} kW</span>
       </div>
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={Position.Bottom} style={{ background: "#f97316", width: 10, height: 10 }} />
     </div>
   );
 }

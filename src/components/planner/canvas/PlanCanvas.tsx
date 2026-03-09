@@ -4,8 +4,11 @@ import {
   Background,
   Controls,
   MiniMap,
+  addEdge,
   type NodeChange,
   type EdgeChange,
+  type Connection,
+  type Edge,
   applyNodeChanges,
   applyEdgeChanges,
 } from "@xyflow/react";
@@ -29,21 +32,39 @@ const edgeTypes = {
 interface PlanCanvasProps {
   planId: string;
   onNodePositionChange?: (nodeId: string, x: number, y: number) => void;
+  onEdgeCreate?: (edge: Edge) => void;
 }
 
-export function PlanCanvas({ onNodePositionChange }: PlanCanvasProps) {
+export function PlanCanvas({ onNodePositionChange, onEdgeCreate }: PlanCanvasProps) {
   const { nodes, edges, setNodes, setEdges, setSelectedNodeId } = useCanvasStore();
 
   function onNodesChange(changes: NodeChange[]) {
-    setNodes(applyNodeChanges(changes, nodes));
+    const currentNodes = useCanvasStore.getState().nodes;
+    setNodes(applyNodeChanges(changes, currentNodes));
   }
 
   function onEdgesChange(changes: EdgeChange[]) {
-    setEdges(applyEdgeChanges(changes, edges));
+    const currentEdges = useCanvasStore.getState().edges;
+    setEdges(applyEdgeChanges(changes, currentEdges));
   }
 
   function onNodeDragStop(_: React.MouseEvent, node: { id: string; position: { x: number; y: number } }) {
     onNodePositionChange?.(node.id, node.position.x, node.position.y);
+  }
+
+  function handleConnect(connection: Connection) {
+    const currentEdges = useCanvasStore.getState().edges;
+    const newEdge: Edge = {
+      id: `e-${connection.source}-${connection.target}-${Date.now()}`,
+      source: connection.source,
+      target: connection.target,
+      sourceHandle: connection.sourceHandle ?? undefined,
+      targetHandle: connection.targetHandle ?? undefined,
+      type: "rate",
+      data: {},
+    };
+    setEdges(addEdge(newEdge, currentEdges));
+    onEdgeCreate?.(newEdge);
   }
 
   return (
@@ -56,6 +77,7 @@ export function PlanCanvas({ onNodePositionChange }: PlanCanvasProps) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
+        onConnect={handleConnect}
         onNodeClick={(_, node) => setSelectedNodeId(node.id)}
         onPaneClick={() => setSelectedNodeId(null)}
         fitView

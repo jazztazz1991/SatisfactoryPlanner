@@ -118,6 +118,24 @@ export function initSocketServer(httpServer: HTTPServer): SocketIOServer {
       }
     });
 
+    socket.on("node-positions-changed", (data: { viewMode: string; positions: Record<string, { x: number; y: number }> }) => {
+      if (currentPlanId) {
+        socket.to(currentPlanId).emit("node-positions-changed", data);
+      }
+    });
+
+    socket.on("edge-created", (data: { viewMode: string; edge: unknown }) => {
+      if (currentPlanId) {
+        socket.to(currentPlanId).emit("edge-created", data);
+      }
+    });
+
+    socket.on("floor-config-changed", (data: { floorConfig: unknown }) => {
+      if (currentPlanId) {
+        socket.to(currentPlanId).emit("floor-config-changed", data);
+      }
+    });
+
     socket.on("disconnect", () => {
       if (currentPlanId) {
         planRooms.get(currentPlanId)?.delete(socket.id);

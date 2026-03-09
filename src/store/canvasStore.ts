@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { Node, Edge } from "@xyflow/react";
 import type { ISolverOutput } from "@/domain/types/solver";
+import { DEFAULT_FLOOR_CONFIG, type FloorConfig } from "@/domain/factory/floorAssignment";
 
 export interface RemoteCursor {
   userId: string;
@@ -26,7 +27,14 @@ interface CanvasState {
   // Collaboration state
   collaborators: Collaborator[];
   remoteCursors: Map<string, RemoteCursor>;
+  remoteFactoryPositions: Record<string, { x: number; y: number }> | null;
+  remoteNewEdge: Edge | null;
   isConnected: boolean;
+
+  // Floor state
+  floorConfig: FloorConfig;
+  activeFloor: number;
+  floorCount: number;
 
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -39,7 +47,14 @@ interface CanvasState {
   setCollaborators: (users: Collaborator[]) => void;
   updateRemoteCursor: (cursor: RemoteCursor) => void;
   removeRemoteCursor: (userId: string) => void;
+  setRemoteFactoryPositions: (positions: Record<string, { x: number; y: number }> | null) => void;
+  setRemoteNewEdge: (edge: Edge | null) => void;
   setIsConnected: (connected: boolean) => void;
+
+  // Floor actions
+  setFloorConfig: (config: FloorConfig) => void;
+  setActiveFloor: (floor: number) => void;
+  setFloorCount: (count: number) => void;
 
   reset: () => void;
 }
@@ -52,7 +67,12 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   selectedNodeId: null,
   collaborators: [],
   remoteCursors: new Map(),
+  remoteFactoryPositions: null,
+  remoteNewEdge: null,
   isConnected: false,
+  floorConfig: DEFAULT_FLOOR_CONFIG,
+  activeFloor: 0,
+  floorCount: 1,
 
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
@@ -81,7 +101,12 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       next.delete(userId);
       return { remoteCursors: next };
     }),
+  setRemoteFactoryPositions: (positions) => set({ remoteFactoryPositions: positions }),
+  setRemoteNewEdge: (edge) => set({ remoteNewEdge: edge }),
   setIsConnected: (connected) => set({ isConnected: connected }),
+  setFloorConfig: (config) => set({ floorConfig: config }),
+  setActiveFloor: (floor) => set({ activeFloor: floor }),
+  setFloorCount: (count) => set({ floorCount: count }),
 
   reset: () =>
     set({
@@ -92,6 +117,11 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       selectedNodeId: null,
       collaborators: [],
       remoteCursors: new Map(),
+      remoteFactoryPositions: null,
+      remoteNewEdge: null,
       isConnected: false,
+      floorConfig: DEFAULT_FLOOR_CONFIG,
+      activeFloor: 0,
+      floorCount: 1,
     }),
 }));

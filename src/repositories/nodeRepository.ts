@@ -1,10 +1,12 @@
 import "@/models";
 import { PlanNode } from "@/models/PlanNode";
-import type { IPlanNode } from "@/domain/types/plan";
+import type { IPlanNode, NodeViewType } from "@/domain/types/plan";
 import type { CreateNodeInput, UpdateNodeInput } from "@/domain/validation/nodeSchemas";
 
-export async function getNodesByPlan(planId: string): Promise<IPlanNode[]> {
-  const rows = await PlanNode.findAll({ where: { planId } });
+export async function getNodesByPlan(planId: string, viewType?: NodeViewType): Promise<IPlanNode[]> {
+  const where: Record<string, unknown> = { planId };
+  if (viewType) where.viewType = viewType;
+  const rows = await PlanNode.findAll({ where });
   return rows.map(nodeToDTO);
 }
 
@@ -27,6 +29,7 @@ export async function createNode(
     positionX: input.positionX ?? 0,
     positionY: input.positionY ?? 0,
     nodeType: input.nodeType,
+    viewType: input.viewType ?? "graph",
   });
   return nodeToDTO(row);
 }
@@ -67,5 +70,6 @@ function nodeToDTO(row: PlanNode): IPlanNode {
     positionX: Number(row.positionX),
     positionY: Number(row.positionY),
     nodeType: row.nodeType,
+    viewType: row.viewType,
   };
 }

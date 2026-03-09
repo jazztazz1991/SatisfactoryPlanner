@@ -21,6 +21,13 @@ export const updatePlanSchema = z.object({
     .record(z.string(), z.object({ x: z.number(), y: z.number() }))
     .nullable()
     .optional(),
+  floorConfig: z
+    .object({
+      floorWidth: z.number().int().min(4).max(64),
+      floorDepth: z.number().int().min(4).max(64),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type CreatePlanInput = z.infer<typeof createPlanSchema>;

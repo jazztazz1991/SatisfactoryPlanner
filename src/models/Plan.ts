@@ -57,4 +57,7 @@ export class Plan extends Model {
 
   @Column({ type: DataType.JSONB, allowNull: true })
   declare factoryNodePositions: Record<string, { x: number; y: number }> | null;
+
+  @Column({ type: DataType.JSONB, allowNull: true })
+  declare floorConfig: { floorWidth: number; floorDepth: number } | null;
 }

@@ -21,15 +21,22 @@ export function SplitterMergerNode({ data, selected }: NodeProps) {
     >
       <span className="text-[10px] font-bold text-white/90">{label}</span>
 
-      {/* Bus handles: top (in) and bottom (out) for vertical chain */}
-      <Handle type="target" position={Position.Top} id={`bus-in-${d.itemClassName}`} />
-      <Handle type="source" position={Position.Bottom} id={`bus-out-${d.itemClassName}`} />
-
-      {/* Branch handle: right (out) for splitter, left (in) for merger */}
       {isSplitter ? (
-        <Handle type="source" position={Position.Right} id={`branch-out-${d.itemClassName}`} />
+        <>
+          {/* Splitter: 1 input (top/bus-in), 3 outputs (right, bottom/bus-out, left) */}
+          <Handle type="target" position={Position.Top} id={`bus-in-${d.itemClassName}`} style={{ background: "#3b82f6", width: 8, height: 8 }} />
+          <Handle type="source" position={Position.Right} id={`branch-out-${d.itemClassName}`} style={{ background: "#f97316", width: 8, height: 8 }} />
+          <Handle type="source" position={Position.Bottom} id={`bus-out-${d.itemClassName}`} style={{ background: "#f97316", width: 8, height: 8 }} />
+          <Handle type="source" position={Position.Left} id={`branch-out-left-${d.itemClassName}`} style={{ background: "#f97316", width: 8, height: 8 }} />
+        </>
       ) : (
-        <Handle type="target" position={Position.Left} id={`branch-in-${d.itemClassName}`} />
+        <>
+          {/* Merger: 3 inputs (left, top/bus-in, right), 1 output (bottom/bus-out) */}
+          <Handle type="target" position={Position.Top} id={`bus-in-${d.itemClassName}`} style={{ background: "#3b82f6", width: 8, height: 8 }} />
+          <Handle type="target" position={Position.Left} id={`branch-in-${d.itemClassName}`} style={{ background: "#3b82f6", width: 8, height: 8 }} />
+          <Handle type="target" position={Position.Right} id={`branch-in-right-${d.itemClassName}`} style={{ background: "#3b82f6", width: 8, height: 8 }} />
+          <Handle type="source" position={Position.Bottom} id={`bus-out-${d.itemClassName}`} style={{ background: "#f97316", width: 8, height: 8 }} />
+        </>
       )}
     </div>
   );

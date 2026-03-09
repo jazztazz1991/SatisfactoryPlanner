@@ -15,6 +15,10 @@ import { RemoteCursors } from "./RemoteCursors";
 import { useCollaboration } from "@/hooks/useCollaboration";
 import { useCursorTracking } from "@/hooks/useCursors";
 import { Button } from "@/components/shared/Button";
+import { BuilderCanvas } from "./builder/BuilderCanvas";
+import { BuilderNodeInspector } from "./builder/BuilderNodeInspector";
+import { useBuilderStore } from "@/store/builderStore";
+import { ReactFlowProvider } from "@xyflow/react";
 import type { ViewMode, CollaboratorRole, IPlanTarget, IPlan } from "@/domain/types/plan";
 import type { ISolverOutput, IProductionStep, IRawResourceRequirement } from "@/domain/types/solver";
 import type { IRecipe } from "@/domain/types/game";
@@ -119,7 +123,7 @@ function solverOutputToGraph(result: ISolverOutput): { nodes: Node[]; edges: Edg
   return { nodes, edges };
 }
 
-type ShellViewMode = ViewMode | "factory";
+type ShellViewMode = ViewMode | "factory" | "builder";
 
 interface PlannerShellProps {
   planId: string;
@@ -139,7 +143,7 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
   const [viewMode, setViewMode] = useState<ShellViewMode>(initialViewMode);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
-  const { setSolverResult, setMaxTier, setNodes, setEdges, solverResult, nodes, maxTier } = useCanvasStore();
+  const { setSolverResult, setMaxTier, setNodes, setEdges, solverResult, nodes, edges, maxTier, setFloorConfig } = useCanvasStore();
   const queryClient = useQueryClient();
 
   useEffect(() => { setMaxTier(initialMaxTier); }, [initialMaxTier, setMaxTier]);
@@ -159,16 +163,25 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
         if (plan?.factoryNodePositions) {
           setFactoryPositions(plan.factoryNodePositions);
         }
+        if (plan?.floorConfig) {
+          setFloorConfig(plan.floorConfig);
+        }
       })
       .catch(() => { /* ignore — user can re-calculate manually */ });
     return () => { cancelled = true; };
   }, [planId, setSolverResult]);
+
+  const { sendCursorPosition, broadcastSolverResult, broadcastNodePositions, broadcastEdgeCreated, broadcastFloorConfigChanged } = useCollaboration(planId);
+  const remoteFactoryPositions = useCanvasStore((s) => s.remoteFactoryPositions);
+  const remoteNewEdge = useCanvasStore((s) => s.remoteNewEdge);
+  const { onMouseMove } = useCursorTracking(sendCursorPosition);
 
   // Save factory node positions (debounced)
   const factoryPositionTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const saveFactoryPositions = useCallback(
     (positions: Record<string, { x: number; y: number }>) => {
       setFactoryPositions(positions);
+      broadcastNodePositions("factory", positions);
       clearTimeout(factoryPositionTimer.current);
       factoryPositionTimer.current = setTimeout(() => {
         fetch(`/api/plans/${planId}`, {
@@ -178,7 +191,7 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
         }).catch(() => { /* best-effort save */ });
       }, 500);
     },
-    [planId]
+    [planId, broadcastNodePositions]
   );
 
   // Subscribe to targets so we can auto-recalculate when they change
@@ -195,22 +208,6 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
   const hasInitialized = useRef(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const targetsFingerprint = targets?.map((t) => `${t.itemClassName}:${t.targetRate}`).join(",") ?? "";
-
-  useEffect(() => {
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      return;
-    }
-    clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
-      calcMutation.mutate();
-    }, 500);
-    return () => clearTimeout(debounceTimer.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetsFingerprint, maxTier]);
-
-  const { sendCursorPosition, broadcastSolverResult } = useCollaboration(planId);
-  const { onMouseMove } = useCursorTracking(sendCursorPosition);
 
   // Track whether calc was triggered manually (to switch view) vs auto
   const manualCalcRef = useRef(false);
@@ -274,6 +271,7 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
   const nodePositionTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const saveNodePosition = useCallback(
     (nodeId: string, x: number, y: number) => {
+      broadcastNodePositions("graph", { [nodeId]: { x, y } });
       const existing = nodePositionTimers.current.get(nodeId);
       if (existing) clearTimeout(existing);
       nodePositionTimers.current.set(
@@ -288,7 +286,52 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
         }, 300)
       );
     },
-    [planId]
+    [planId, broadcastNodePositions]
+  );
+
+  const handleNodeUpdate = useCallback(
+    (nodeId: string, data: Partial<{ overclockPercent: number }>) => {
+      setNodes(
+        nodes.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n
+        )
+      );
+    },
+    [nodes, setNodes]
+  );
+
+  const handleNodeDelete = useCallback(
+    (nodeId: string) => {
+      setNodes(nodes.filter((n) => n.id !== nodeId));
+      setEdges(edges.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    },
+    [nodes, edges, setNodes, setEdges]
+  );
+
+  const handleGraphEdgeCreate = useCallback(
+    (edge: Edge) => { broadcastEdgeCreated("graph", edge); },
+    [broadcastEdgeCreated]
+  );
+
+  const handleFactoryEdgeCreate = useCallback(
+    (edge: Edge) => { broadcastEdgeCreated("factory", edge); },
+    [broadcastEdgeCreated]
+  );
+
+  const floorConfigTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const handleFloorConfigChange = useCallback(
+    (config: { floorWidth: number; floorDepth: number }) => {
+      broadcastFloorConfigChanged(config);
+      clearTimeout(floorConfigTimer.current);
+      floorConfigTimer.current = setTimeout(() => {
+        fetch(`/api/plans/${planId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ floorConfig: config }),
+        }).catch(() => { /* best-effort save */ });
+      }, 500);
+    },
+    [planId, broadcastFloorConfigChanged]
   );
 
   function switchToGraph() {
@@ -312,7 +355,13 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
         <div className="border-t border-gray-800" />
         <RecipePicker onSelect={(recipe) => addTargetFromRecipe.mutate(recipe)} />
         <div className="border-t border-gray-800" />
-        <NodeInspector planId={planId} />
+        {viewMode === "builder" ? (
+          <BuilderNodeInspector
+            onReassignRecipe={(nodeId) => useBuilderStore.getState().setRecipeAssignNodeId(nodeId)}
+          />
+        ) : (
+          <NodeInspector planId={planId} onUpdate={handleNodeUpdate} onDelete={handleNodeDelete} />
+        )}
       </aside>
 
       {/* Main area */}
@@ -352,6 +401,17 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
               }`}
             >
               Factory
+            </button>
+            <button
+              aria-pressed={viewMode === "builder"}
+              onClick={() => setViewMode("builder")}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                viewMode === "builder"
+                  ? "bg-orange-500 text-white"
+                  : "bg-gray-800 text-gray-400 hover:text-white"
+              }`}
+            >
+              Builder
             </button>
           </div>
           <Button
@@ -411,12 +471,20 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
             />
           )}
           {viewMode === "graph" ? (
-            <PlanCanvas planId={planId} onNodePositionChange={saveNodePosition} />
+            <PlanCanvas planId={planId} onNodePositionChange={saveNodePosition} onEdgeCreate={handleGraphEdgeCreate} />
           ) : viewMode === "factory" ? (
             <FactoryCanvas
               savedPositions={factoryPositions}
               onNodePositionChange={saveFactoryPositions}
+              remotePositions={remoteFactoryPositions}
+              onEdgeCreate={handleFactoryEdgeCreate}
+              remoteNewEdge={remoteNewEdge}
+              onFloorConfigChange={handleFloorConfigChange}
             />
+          ) : viewMode === "builder" ? (
+            <ReactFlowProvider>
+              <BuilderCanvas planId={planId} maxTier={maxTier} />
+            </ReactFlowProvider>
           ) : (
             <ProductionTree />
           )}

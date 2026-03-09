@@ -68,4 +68,10 @@ export class PlanNode extends Model {
   })
   declare nodeType: "machine" | "resource" | "sink";
 
+  @Column({
+    type: DataType.STRING(16),
+    allowNull: false,
+    defaultValue: "graph",
+  })
+  declare viewType: "graph" | "builder";
 }

@@ -8,24 +8,12 @@ import {
   createMergerManifold,
 } from "@/domain/factory/manifoldLayout";
 import { getMaxBeltRate } from "@/domain/progression/beltConstraints";
+import { assignFloors, DEFAULT_FLOOR_CONFIG, type FloorConfig, type MultiFloorLayout } from "@/domain/factory/floorAssignment";
 
 // ─── Belt tier ───────────────────────────────────────────────────────────────
 
-const BELT_TIERS = [
-  { maxRate: 60, tier: 1 },
-  { maxRate: 120, tier: 2 },
-  { maxRate: 270, tier: 3 },
-  { maxRate: 480, tier: 4 },
-  { maxRate: 780, tier: 5 },
-  { maxRate: 1320, tier: 6 },
-] as const;
-
-export function getBeltTier(rate: number): 1 | 2 | 3 | 4 | 5 | 6 {
-  for (const { maxRate, tier } of BELT_TIERS) {
-    if (rate <= maxRate) return tier;
-  }
-  return 6;
-}
+import { getBeltTier } from "@/domain/factory/beltTiers";
+export { getBeltTier };
 
 // ─── Grid constants ─────────────────────────────────────────────────────────
 
@@ -505,4 +493,14 @@ export function solverOutputToBlueprintFlow(result: ISolverOutput, options: Blue
   }
 
   return { nodes, edges };
+}
+
+// ─── Multi-floor wrapper ──────────────────────────────────────────────────
+
+export function solverOutputToMultiFloorLayout(
+  result: ISolverOutput,
+  options: BlueprintFlowOptions & { floorConfig?: FloorConfig },
+): MultiFloorLayout {
+  const flat = solverOutputToBlueprintFlow(result, options);
+  return assignFloors(flat, options.floorConfig ?? DEFAULT_FLOOR_CONFIG);
 }

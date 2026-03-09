@@ -16,7 +16,7 @@ export function ResourceNode({ data, selected }: NodeProps) {
     >
       <div className="font-semibold text-green-300">{d.itemName}</div>
       <div className="mt-1 text-xs text-green-400">{d.rate.toFixed(2)}/min</div>
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={Position.Bottom} style={{ background: "#f97316", width: 10, height: 10 }} />
     </div>
   );
 }

@@ -8,7 +8,8 @@ export const createNodeSchema = z.object({
   useAlternate: z.boolean().default(false),
   positionX: z.number().default(0),
   positionY: z.number().default(0),
-  nodeType: z.enum(["machine", "resource", "sink"]),
+  nodeType: z.enum(["machine", "resource", "sink", "splitter", "merger"]),
+  viewType: z.enum(["graph", "builder"]).default("graph"),
 });
 
 export const updateNodeSchema = z.object({
@@ -19,7 +20,7 @@ export const updateNodeSchema = z.object({
   useAlternate: z.boolean().optional(),
   positionX: z.number().optional(),
   positionY: z.number().optional(),
-  nodeType: z.enum(["machine", "resource", "sink"]).optional(),
+  nodeType: z.enum(["machine", "resource", "sink", "splitter", "merger"]).optional(),
 });
 
 export type CreateNodeInput = z.infer<typeof createNodeSchema>;

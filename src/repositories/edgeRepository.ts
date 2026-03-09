@@ -1,16 +1,21 @@
 import "@/models";
 import { PlanEdge } from "@/models/PlanEdge";
-import type { IPlanEdge } from "@/domain/types/plan";
+import type { IPlanEdge, NodeViewType } from "@/domain/types/plan";
 
 export interface CreateEdgeInput {
   sourceNodeId: string;
   targetNodeId: string;
   itemClassName: string;
   rate: number;
+  viewType?: NodeViewType;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
 }
 
-export async function getEdgesByPlan(planId: string): Promise<IPlanEdge[]> {
-  const rows = await PlanEdge.findAll({ where: { planId } });
+export async function getEdgesByPlan(planId: string, viewType?: NodeViewType): Promise<IPlanEdge[]> {
+  const where: Record<string, unknown> = { planId };
+  if (viewType) where.viewType = viewType;
+  const rows = await PlanEdge.findAll({ where });
   return rows.map(edgeToDTO);
 }
 
@@ -24,6 +29,9 @@ export async function createEdge(
     targetNodeId: input.targetNodeId,
     itemClassName: input.itemClassName,
     rate: input.rate,
+    viewType: input.viewType ?? "graph",
+    sourceHandle: input.sourceHandle ?? null,
+    targetHandle: input.targetHandle ?? null,
   });
   return edgeToDTO(row);
 }
@@ -46,5 +54,8 @@ function edgeToDTO(row: PlanEdge): IPlanEdge {
     targetNodeId: row.targetNodeId,
     itemClassName: row.itemClassName,
     rate: Number(row.rate),
+    viewType: row.viewType,
+    sourceHandle: row.sourceHandle ?? null,
+    targetHandle: row.targetHandle ?? null,
   };
 }

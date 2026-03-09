@@ -50,6 +50,9 @@ export async function updatePlan(
     ...(input.factoryNodePositions !== undefined && {
       factoryNodePositions: input.factoryNodePositions,
     }),
+    ...(input.floorConfig !== undefined && {
+      floorConfig: input.floorConfig,
+    }),
   });
   return planToDTO(row);
 }
@@ -166,6 +169,7 @@ function planToDTO(row: Plan): IPlan {
     shareRole: row.shareRole ?? null,
     maxTier: row.maxTier ?? 9,
     factoryNodePositions: row.factoryNodePositions ?? null,
+    floorConfig: (row.floorConfig as IPlan["floorConfig"]) ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

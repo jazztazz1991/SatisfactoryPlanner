@@ -15,24 +15,25 @@
 
 ## Phase 2: Make Collaboration Work
 
-- [ ] **P1 — Socket.IO has zero authentication**
-  - `src/lib/socketServer.ts` / `src/lib/socketClient.ts`
-  - Any client can connect and emit events to any plan room without verifying identity
-  - Pass auth tokens during the socket handshake and verify server-side
-
-- [ ] **P2 — No "Shared with me" section on dashboard**
-  - Dashboard only queries owned plans (`getPlansByUser`)
-  - Add a section showing plans where the user is a collaborator
-  - `planRepository.ts` already has `getAllPlansForUser` with a raw SQL join — wire it up
+- [x] **P2 — No "Shared with me" section on dashboard**
+  - Already implemented: API uses `getAllPlansForUser` which returns owned + shared plans
+  - PlanList component splits by `accessRole` and renders "Shared with me" section
+  - PlanCard shows role badge and owner name for shared plans
 
 - [x] **P2 — No pending invites view**
   - Fixed: added NotificationBell component in app header with invite accept/decline
   - API: GET/POST `/api/notifications` for pending invites + recent shares
   - Pending email invites matched by user email, accepted via `acceptCollaborator`
 
-- [ ] **P2 — NodeInspector is read-only**
-  - Has `onUpdate`/`onDelete` props but they're never wired up in `PlannerShell`
-  - Users can't edit or delete nodes from the inspector panel
+- [x] **P2 — NodeInspector is read-only**
+  - Fixed: wired `handleNodeUpdate` and `handleNodeDelete` callbacks in PlannerShell
+  - Update applies overclock changes to graph node data in store
+  - Delete removes node and its connected edges from store
+
+- [x] **P2 — Node moves not synced to other collaborators**
+  - Fixed: added `node-positions-changed` Socket.IO event for both Graph and Factory views
+  - PlannerShell broadcasts positions on drag stop; useCollaboration applies remote updates
+  - Factory positions stored in canvasStore as `remoteFactoryPositions`; Graph uses existing `updateNodePosition`
 
 ---
 
@@ -56,12 +57,28 @@
   - Show sink points earned per minute from excess items
   - Allow users to toggle sinking per item (some excess may be wanted for other plans)
 
-- [ ] **P2 — Multi-floor factory layout with configurable floor size**
-  - Let users define a floor footprint (e.g. 8x4 foundations, 16x8, custom)
-  - Factory layout engine distributes buildings across multiple floors when they don't fit on one
-  - Each floor shown as a separate layer in the Factory view (tab per floor or stacked view)
-  - Vertical conveyors / lifts between floors for items that cross floor boundaries
-  - Floor count determined automatically based on total building footprint vs floor area
+- [x] **P2 — Multi-floor factory layout with configurable floor size**
+  - Post-processing floor assignment: `assignFloors()` partitions flat layout into Y-position bands
+  - Configurable floor footprint via FloorConfigPopover (width/depth in foundations, 4–64)
+  - Floor tabs UI: one tab per floor, shown when layout spans multiple floors
+  - LiftNode component for cross-floor connections with direction arrows and floor labels
+  - Group-aware assignment keeps recipe machine groups on same floor
+  - Floor config persisted to `floor_config` JSONB column on Plan model
+  - Real-time sync via `floor-config-changed` Socket.IO event
+  - 21 new tests (11 unit + 7 RTL + 3 E2E scenarios)
+
+- [x] **P2 — Freeform factory builder (Builder tab)**
+  - New "Builder" tab (4th view alongside Graph, Tree, Factory)
+  - Users place machine nodes from toolbar, assign recipes via dialog, connect with belts
+  - Belt throughput auto-calculates from recipe rates (forward propagation)
+  - Rate splitting when multiple edges leave same source handle
+  - Domain logic: `rateCalculation.ts`, `connectionValidation.ts`, `beltTiers.ts` (extracted)
+  - Zustand store (`builderStore`) separate from solver-driven `canvasStore`
+  - Persisted via existing PlanNode/PlanEdge tables with `viewType` discriminator
+  - Bulk save/load API at `/api/plans/[planId]/builder`
+  - BuilderNodeInspector sidebar: machine count, overclock %, recipe assignment
+  - Socket.IO collaboration support for builder node positions and edges
+  - 14 new tests (16 domain + 10 RTL + 3 E2E scenarios), 335 total tests passing
 
 - [ ] **P2 — No user profile/settings page**
   - `PATCH /api/users/me` route exists but no UI

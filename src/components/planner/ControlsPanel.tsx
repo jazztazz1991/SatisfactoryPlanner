@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 
-type ViewMode = "graph" | "tree" | "factory";
+type ViewMode = "graph" | "tree" | "factory" | "builder";
 
 interface ControlSection {
   title: string;
@@ -75,12 +75,39 @@ const TREE_CONTROLS: ControlSection[] = [
   },
 ];
 
+const BUILDER_CONTROLS: ControlSection[] = [
+  {
+    title: "Placing",
+    items: [
+      "Click toolbar buttons to add machines",
+      "S = Splitter (1→3), M = Merger (3→1)",
+      "Drag nodes to reposition (snaps to grid)",
+    ],
+  },
+  {
+    title: "Recipes",
+    items: [
+      "Double-click a machine to assign a recipe",
+      "Handles appear after recipe assignment",
+    ],
+  },
+  {
+    title: "Belts",
+    items: [
+      "Drag from output (orange) to input (blue) handle",
+      "Belt rate auto-calculates from recipe",
+    ],
+  },
+];
+
 function getControlsForView(viewMode: ViewMode): ControlSection[] {
   switch (viewMode) {
     case "graph":
       return GRAPH_CONTROLS;
     case "factory":
       return FACTORY_CONTROLS;
+    case "builder":
+      return BUILDER_CONTROLS;
     case "tree":
       return TREE_CONTROLS;
   }
@@ -132,7 +159,7 @@ export function ControlsPanel({ viewMode, onClose }: ControlsPanelProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const viewLabel = viewMode === "graph" ? "Graph" : viewMode === "factory" ? "Factory" : "Tree";
+  const viewLabel = viewMode === "graph" ? "Graph" : viewMode === "factory" ? "Factory" : viewMode === "builder" ? "Builder" : "Tree";
 
   return (
     <div

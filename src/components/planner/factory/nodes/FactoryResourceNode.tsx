@@ -22,6 +22,7 @@ export function FactoryResourceNode({ data, selected }: NodeProps) {
         type="source"
         position={Position.Right}
         id={`out-${d.itemClassName}`}
+        style={{ background: "#f97316", width: 8, height: 8 }}
       />
     </div>
   );
