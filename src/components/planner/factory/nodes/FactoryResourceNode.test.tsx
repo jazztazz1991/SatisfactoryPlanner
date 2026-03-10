@@ -49,10 +49,10 @@ describe("FactoryResourceNode", () => {
     expect(node.style.height).toBe("48px");
   });
 
-  it("shows yellow border when selected", () => {
+  it("shows brand border when selected", () => {
     const { container } = render(<FactoryResourceNode {...baseProps} selected={true} />);
     const card = container.firstElementChild;
-    expect(card?.className).toContain("border-yellow-400");
+    expect(card?.className).toContain("border-brand");
   });
 
   it("shows default green border when not selected", () => {

@@ -121,15 +121,15 @@ function CollapsibleSection({ section }: { section: ControlSection }) {
       <button
         aria-expanded={!collapsed}
         onClick={() => setCollapsed((c) => !c)}
-        className="flex w-full items-center gap-1.5 text-xs font-semibold text-gray-300 hover:text-white"
+        className="flex w-full items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-content-muted hover:text-brand"
       >
-        <span className="w-3 text-gray-500">{collapsed ? "\u25B6" : "\u25BC"}</span>
+        <span className="w-3 text-content-muted">{collapsed ? "\u25B6" : "\u25BC"}</span>
         {section.title}
       </button>
       {!collapsed && (
         <ul className="mt-1 ml-4.5 flex flex-col gap-0.5">
           {section.items.map((item) => (
-            <li key={item} className="text-xs text-gray-400">
+            <li key={item} className="text-xs text-content-secondary">
               {item}
             </li>
           ))}
@@ -165,16 +165,16 @@ export function ControlsPanel({ viewMode, onClose }: ControlsPanelProps) {
     <div
       role="region"
       aria-label="Controls help panel"
-      className="absolute bottom-4 left-4 z-50 w-64 rounded-lg border border-gray-700 bg-gray-900/95 shadow-lg backdrop-blur-sm"
+      className="absolute bottom-4 left-4 z-50 w-64 glass glass-border rounded-xl shadow-card"
     >
-      <div className="flex items-center justify-between border-b border-gray-700 px-3 py-2">
-        <span className="text-xs font-semibold text-gray-200">
+      <div className="flex items-center justify-between border-b border-surface-border px-4 py-3">
+        <span className="text-xs font-bold uppercase tracking-widest text-content-muted">
           {viewLabel} Controls
         </span>
         <button
           aria-label="Close controls panel"
           onClick={onClose}
-          className="text-gray-400 hover:text-white"
+          className="text-content-secondary hover:text-content"
         >
           &times;
         </button>

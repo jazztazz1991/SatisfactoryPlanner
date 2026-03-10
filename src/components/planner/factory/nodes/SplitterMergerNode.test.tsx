@@ -80,7 +80,7 @@ describe("SplitterMergerNode", () => {
       />
     );
     const node = container.firstElementChild;
-    expect(node?.className).toContain("border-yellow-400");
+    expect(node?.className).toContain("border-brand");
   });
 
   it("renders at grid cell size", () => {

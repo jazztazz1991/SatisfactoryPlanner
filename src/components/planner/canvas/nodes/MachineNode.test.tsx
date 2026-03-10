@@ -53,6 +53,6 @@ describe("MachineNode", () => {
   it("applies selected styling when selected", () => {
     render(<MachineNode {...baseProps} selected />);
     const node = screen.getByText("Iron Ingot").closest("div")!.parentElement!;
-    expect(node.className).toContain("border-orange-500");
+    expect(node.className).toContain("border-brand");
   });
 });

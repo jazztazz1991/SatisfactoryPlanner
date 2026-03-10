@@ -11,7 +11,7 @@ export function SplitterMergerNode({ data, selected }: NodeProps) {
   const d = data as SplitterMergerNodeData;
   const isSplitter = d.kind === "splitter";
   const bg = isSplitter ? "bg-amber-700/80" : "bg-teal-700/80";
-  const border = selected ? "border-yellow-400" : isSplitter ? "border-amber-400" : "border-teal-400";
+  const border = selected ? "border-brand shadow-glow" : isSplitter ? "border-amber-400" : "border-teal-400";
   const label = isSplitter ? "S" : "M";
 
   return (

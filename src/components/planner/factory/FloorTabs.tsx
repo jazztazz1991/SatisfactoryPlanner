@@ -13,10 +13,10 @@ export function FloorTabs({ floorCount, activeFloor, onFloorChange }: FloorTabsP
           role="tab"
           aria-selected={i === activeFloor}
           onClick={() => onFloorChange(i)}
-          className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+          className={`px-3 py-1 text-xs font-bold uppercase tracking-widest transition-colors ${
             i === activeFloor
-              ? "bg-orange-500 text-white"
-              : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              ? "gradient-brand text-content-inverse rounded-full shadow-glow"
+              : "bg-surface-overlay text-content-muted rounded-full border border-surface-border hover:border-brand/30"
           }`}
         >
           Floor {i + 1}

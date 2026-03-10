@@ -173,7 +173,7 @@ export function FactoryCanvas({ savedPositions, onNodePositionChange, remotePosi
 
   if (!solverResult) {
     return (
-      <div className="flex h-full items-center justify-center text-gray-500">
+      <div className="flex h-full items-center justify-center text-content-muted">
         Calculate first to see the factory view.
       </div>
     );
@@ -183,7 +183,7 @@ export function FactoryCanvas({ savedPositions, onNodePositionChange, remotePosi
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex items-center gap-2 border-b border-gray-800 bg-gray-900 px-3 py-1">
+      <div className="glass glass-border flex items-center gap-2 px-3 py-1">
         {floorCount > 1 && (
           <FloorTabs
             floorCount={floorCount}

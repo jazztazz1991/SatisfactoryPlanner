@@ -55,10 +55,10 @@ describe("BlueprintMachineNode", () => {
     expect(node?.className).toContain("border-amber-500");
   });
 
-  it("shows yellow border when selected", () => {
+  it("shows brand border when selected", () => {
     const { container } = render(<BlueprintMachineNode {...baseProps} selected={true} />);
     const node = container.firstElementChild;
-    expect(node?.className).toContain("border-yellow-400");
+    expect(node?.className).toContain("border-brand");
   });
 
   it("falls back to 'Building' label when buildingName is null", () => {

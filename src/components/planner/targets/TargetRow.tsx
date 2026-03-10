@@ -24,8 +24,8 @@ export function TargetRow({ target, itemName, onUpdate, onDelete }: TargetRowPro
   }
 
   return (
-    <li className="flex items-center gap-3 rounded bg-gray-800 px-3 py-2 text-sm">
-      <span className="flex-1 text-white">{itemName}</span>
+    <li className="flex items-center gap-3 rounded-xl bg-surface-overlay px-3 py-2 text-sm hover:bg-brand-muted transition-colors">
+      <span className="flex-1 text-content">{itemName}</span>
       {editing ? (
         <>
           <Input
@@ -43,7 +43,7 @@ export function TargetRow({ target, itemName, onUpdate, onDelete }: TargetRowPro
         </>
       ) : (
         <>
-          <span className="text-gray-300">{target.targetRate}/min</span>
+          <span className="font-mono text-brand">{target.targetRate}/min</span>
           <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>Edit</Button>
           <Button
             size="sm"

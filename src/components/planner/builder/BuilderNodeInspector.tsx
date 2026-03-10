@@ -30,7 +30,7 @@ export function BuilderNodeInspector({ onReassignRecipe, onRateChange }: Builder
 
   if (!node) {
     return (
-      <div className="p-3 text-xs text-gray-500">
+      <div className="p-3 text-xs text-content-muted">
         Select a node to inspect.
       </div>
     );
@@ -43,16 +43,16 @@ export function BuilderNodeInspector({ onReassignRecipe, onRateChange }: Builder
     const label = data.kind === "splitter" ? "Splitter" : "Merger";
     return (
       <div className="space-y-2 p-3">
-        <h3 className="text-sm font-medium text-white">{label}</h3>
-        <p className="text-xs text-gray-400">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-content-muted">{label}</h3>
+        <p className="text-xs text-content-secondary">
           {data.kind === "splitter" ? "1 input, 3 outputs" : "3 inputs, 1 output"}
         </p>
         {data.itemClassName && (
-          <p className="text-xs text-gray-500">Item: {data.itemClassName}</p>
+          <p className="text-xs text-content-muted">Item: {data.itemClassName}</p>
         )}
         <button
           onClick={() => removeNode(node.id)}
-          className="w-full rounded bg-red-800 px-2 py-1 text-xs text-red-200 hover:bg-red-700"
+          className="w-full rounded-xl bg-danger-muted border border-danger/20 px-2 py-1 text-xs text-danger-light hover:bg-danger/20 transition-colors"
         >
           Delete
         </button>
@@ -66,10 +66,10 @@ export function BuilderNodeInspector({ onReassignRecipe, onRateChange }: Builder
     const data = node.data as { itemName: string; rate: number };
     return (
       <div className="space-y-2 p-3">
-        <h3 className="text-sm font-medium text-white">{data.itemName}</h3>
-        <p className="text-xs text-gray-400">Resource Source</p>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-content-muted">{data.itemName}</h3>
+        <p className="text-xs text-content-secondary">Resource Source</p>
 
-        <label className="flex items-center justify-between text-xs text-gray-400">
+        <label className="flex items-center justify-between text-xs text-content-secondary">
           <span>Rate /min</span>
           <input
             type="number"
@@ -86,14 +86,14 @@ export function BuilderNodeInspector({ onReassignRecipe, onRateChange }: Builder
               }
             }}
             onBlur={() => setRateInput("")}
-            className="w-20 rounded border border-gray-600 bg-gray-900 px-2 py-0.5 text-xs text-white"
+            className="w-20 rounded-xl border border-surface-border bg-surface-overlay px-2 py-0.5 text-xs font-mono text-content focus:outline-none focus:glow-ring"
             aria-label="Resource rate"
           />
         </label>
 
         <button
           onClick={() => removeNode(node.id)}
-          className="w-full rounded bg-red-800 px-2 py-1 text-xs text-red-200 hover:bg-red-700"
+          className="w-full rounded-xl bg-danger-muted border border-danger/20 px-2 py-1 text-xs text-danger-light hover:bg-danger/20 transition-colors"
         >
           Delete
         </button>
@@ -106,20 +106,20 @@ export function BuilderNodeInspector({ onReassignRecipe, onRateChange }: Builder
   return (
     <div className="space-y-3 p-3">
       <div>
-        <h3 className="text-sm font-medium text-white">{data.buildingName}</h3>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-content-muted">{data.buildingName}</h3>
         {data.recipeName && (
-          <p className="text-xs text-gray-400">{data.recipeName}</p>
+          <p className="text-xs text-content-secondary">{data.recipeName}</p>
         )}
       </div>
 
       <button
         onClick={() => onReassignRecipe(node.id)}
-        className="w-full rounded bg-orange-800 px-2 py-1 text-xs text-orange-200 hover:bg-orange-700"
+        className="w-full rounded-xl gradient-brand px-2 py-1 text-xs font-bold text-content-inverse hover:shadow-glow transition-shadow"
       >
         {data.recipeClassName ? "Change Recipe" : "Assign Recipe"}
       </button>
 
-      <label className="flex items-center justify-between text-xs text-gray-400">
+      <label className="flex items-center justify-between text-xs text-content-secondary">
         <span>Machines</span>
         <input
           type="number"
@@ -135,12 +135,12 @@ export function BuilderNodeInspector({ onReassignRecipe, onRateChange }: Builder
             }
           }}
           onBlur={() => setMachineInput("")}
-          className="w-16 rounded border border-gray-600 bg-gray-900 px-2 py-0.5 text-xs text-white"
+          className="w-16 rounded-xl border border-surface-border bg-surface-overlay px-2 py-0.5 text-xs font-mono text-content focus:outline-none focus:glow-ring"
           aria-label="Machine count"
         />
       </label>
 
-      <label className="flex items-center justify-between text-xs text-gray-400">
+      <label className="flex items-center justify-between text-xs text-content-secondary">
         <span>Overclock %</span>
         <input
           type="number"
@@ -156,14 +156,14 @@ export function BuilderNodeInspector({ onReassignRecipe, onRateChange }: Builder
             }
           }}
           onBlur={() => setOverclockInput("")}
-          className="w-16 rounded border border-gray-600 bg-gray-900 px-2 py-0.5 text-xs text-white"
+          className="w-16 rounded-xl border border-surface-border bg-surface-overlay px-2 py-0.5 text-xs font-mono text-content focus:outline-none focus:glow-ring"
           aria-label="Overclock percent"
         />
       </label>
 
       <button
         onClick={() => removeNode(node.id)}
-        className="w-full rounded bg-red-800 px-2 py-1 text-xs text-red-200 hover:bg-red-700"
+        className="w-full rounded-xl bg-danger-muted border border-danger/20 px-2 py-1 text-xs text-danger-light hover:bg-danger/20 transition-colors"
       >
         Delete Node
       </button>

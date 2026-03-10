@@ -39,90 +39,100 @@ export default function NewPlanPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
-      <h1 className="mb-6 text-2xl font-bold text-white">New Plan</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+    <div className="mx-auto max-w-5xl px-8 py-12">
+      <div className="mb-10">
+        <h1 className="text-3xl font-black uppercase tracking-tight text-content">New Plan</h1>
+        <p className="mt-1 text-sm text-content-muted">Configure your factory blueprint</p>
+      </div>
+
+      <form onSubmit={handleSubmit}>
         {error && (
-          <p role="alert" className="rounded bg-red-900/40 px-3 py-2 text-sm text-red-300">
+          <div role="alert" className="mb-6 rounded-lg border border-danger/30 bg-danger-muted px-4 py-3 text-sm text-danger-light">
             {error}
-          </p>
+          </div>
         )}
 
-        <Input
-          id="plan-name"
-          label="Plan Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="My Iron Factory"
-          required
-        />
+        {/* Two-column layout */}
+        <div className="grid gap-10 lg:grid-cols-2">
+          {/* Left column — details */}
+          <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-5 rounded-2xl border border-surface-border bg-surface-raised p-6">
+              <Input
+                id="plan-name"
+                label="Plan Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="My Iron Factory"
+                required
+              />
+              <Input
+                id="plan-description"
+                label="Description (optional)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe your plan..."
+              />
+            </div>
 
-        <Input
-          id="plan-description"
-          label="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe your plan..."
-        />
+            <fieldset>
+              <legend className="mb-3 text-xs font-bold uppercase tracking-widest text-content-muted">
+                Max Milestone Tier
+              </legend>
+              <TierPicker value={maxTier} onChange={setMaxTier} />
+              <p className="mt-2 text-xs text-content-muted">
+                Only recipes and buildings unlocked up to this tier will be used.
+              </p>
+            </fieldset>
 
-        {/* Template selector */}
-        <fieldset>
-          <legend className="mb-3 text-sm font-medium text-gray-300">
-            Start from a template (optional)
-          </legend>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => { setTemplateKey(null); setMaxTier(9); }}
-              className={`rounded-lg border p-3 text-left text-sm transition-colors ${
-                templateKey === null
-                  ? "border-orange-500 bg-orange-500/10 text-white"
-                  : "border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-500"
-              }`}
-            >
-              <div className="font-medium">Blank plan</div>
-              <div className="mt-1 text-xs text-gray-400">Start from scratch</div>
-            </button>
-            {SPACE_ELEVATOR_TEMPLATES.map((tmpl) => (
-              <button
-                key={tmpl.key}
+            <div className="flex gap-3">
+              <Button type="submit" loading={loading} disabled={!name.trim()}>
+                Create Plan
+              </Button>
+              <Button
                 type="button"
-                onClick={() => { setTemplateKey(tmpl.key); setMaxTier(tmpl.maxTier); }}
-                className={`rounded-lg border p-3 text-left text-sm transition-colors ${
-                  templateKey === tmpl.key
-                    ? "border-orange-500 bg-orange-500/10 text-white"
-                    : "border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-500"
+                variant="secondary"
+                onClick={() => router.push("/dashboard")}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+
+          {/* Right column — template selector */}
+          <fieldset>
+            <legend className="mb-3 text-xs font-bold uppercase tracking-widest text-content-muted">
+              Template
+            </legend>
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => { setTemplateKey(null); setMaxTier(9); }}
+                className={`group rounded-xl border p-4 text-left text-sm transition-all ${
+                  templateKey === null
+                    ? "border-brand/50 bg-brand-muted glow-ring"
+                    : "border-surface-border bg-surface-raised hover:border-brand/20"
                 }`}
               >
-                <div className="font-medium">{tmpl.name}</div>
-                <div className="mt-1 text-xs text-gray-400">{tmpl.description}</div>
+                <div className={`font-semibold ${templateKey === null ? "text-brand" : "text-content"}`}>Blank plan</div>
+                <div className="mt-1 text-xs text-content-muted">Start from scratch</div>
               </button>
-            ))}
-          </div>
-        </fieldset>
-
-        {/* Milestone tier selector */}
-        <fieldset>
-          <legend className="mb-3 text-sm font-medium text-gray-300">
-            Max Milestone Tier
-          </legend>
-          <TierPicker value={maxTier} onChange={setMaxTier} />
-          <p className="mt-2 text-xs text-gray-500">
-            Only recipes and buildings unlocked up to this tier will be used.
-          </p>
-        </fieldset>
-
-        <div className="flex gap-3">
-          <Button type="submit" loading={loading} disabled={!name.trim()}>
-            Create Plan
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => router.push("/dashboard")}
-          >
-            Cancel
-          </Button>
+              {SPACE_ELEVATOR_TEMPLATES.map((tmpl) => (
+                <button
+                  key={tmpl.key}
+                  type="button"
+                  onClick={() => { setTemplateKey(tmpl.key); setMaxTier(tmpl.maxTier); }}
+                  className={`group rounded-xl border p-4 text-left text-sm transition-all ${
+                    templateKey === tmpl.key
+                      ? "border-brand/50 bg-brand-muted glow-ring"
+                      : "border-surface-border bg-surface-raised hover:border-brand/20"
+                  }`}
+                >
+                  <div className={`font-semibold ${templateKey === tmpl.key ? "text-brand" : "text-content"}`}>{tmpl.name}</div>
+                  <div className="mt-1 text-xs text-content-muted">{tmpl.description}</div>
+                </button>
+              ))}
+            </div>
+          </fieldset>
         </div>
       </form>
     </div>

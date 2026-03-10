@@ -30,7 +30,7 @@ export function RecipePicker({ onSelect }: RecipePickerProps) {
 
   return (
     <div className="flex flex-col gap-3 p-3">
-      <h2 className="text-sm font-semibold text-gray-300">Add Recipe</h2>
+      <h2 className="text-xs font-bold uppercase tracking-widest text-content-muted">Add Recipe</h2>
       <Input
         id="recipe-search"
         placeholder="Search recipes..."
@@ -48,17 +48,17 @@ export function RecipePicker({ onSelect }: RecipePickerProps) {
                 role="option"
                 aria-selected={false}
                 onClick={() => onSelect(recipe)}
-                className="w-full rounded px-2 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-2"
+                className="w-full rounded-xl px-2 py-1.5 text-left text-sm text-content-secondary hover:bg-brand-muted flex items-center gap-2"
               >
                 <span>{recipe.name}</span>
                 {recipe.isAlternate && (
-                  <span className="ml-auto text-xs text-orange-400">Alt</span>
+                  <span className="ml-auto rounded-full bg-accent-muted border border-accent/20 px-1.5 text-[10px] font-bold text-accent-light uppercase">Alt</span>
                 )}
               </button>
             </li>
           ))}
           {filtered.length === 0 && (
-            <li className="px-2 py-2 text-sm text-gray-500">No recipes found</li>
+            <li className="px-2 py-2 text-sm text-content-muted">No recipes found</li>
           )}
         </ul>
       )}

@@ -7,7 +7,7 @@ const TIERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 export function TierPicker({ value, onChange }: TierPickerProps) {
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1.5">
       {TIERS.map((tier) => {
         const isSelected = tier === value;
         return (
@@ -17,10 +17,10 @@ export function TierPicker({ value, onChange }: TierPickerProps) {
             aria-label={`Tier ${tier}`}
             aria-pressed={isSelected}
             onClick={() => { if (!isSelected) onChange(tier); }}
-            className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+            className={`rounded-full h-8 w-8 text-xs font-mono font-bold transition-all ${
               isSelected
-                ? "bg-orange-500 text-white"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
+                ? "gradient-brand text-content-inverse shadow-glow"
+                : "bg-surface-overlay text-content-muted border border-surface-border hover:border-brand/30 hover:text-brand"
             }`}
           >
             {tier}

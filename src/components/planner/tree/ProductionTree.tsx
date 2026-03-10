@@ -35,7 +35,7 @@ export function ProductionTree() {
 
   if (!solverResult) {
     return (
-      <div className="p-6 text-center text-gray-500 text-sm">
+      <div className="p-6 text-center text-content-muted text-sm">
         Calculate your production chain to see the tree view.
       </div>
     );
@@ -43,7 +43,7 @@ export function ProductionTree() {
 
   if (!solverResult.steps.length) {
     return (
-      <div className="p-6 text-center text-gray-500 text-sm">
+      <div className="p-6 text-center text-content-muted text-sm">
         No production steps. Add targets and calculate.
       </div>
     );
@@ -68,9 +68,9 @@ export function ProductionTree() {
 
   return (
     <div className="overflow-auto p-4">
-      <div className="mb-3 flex items-center justify-between text-xs text-gray-400">
-        <span>{solverResult.steps.length} steps</span>
-        <span>{solverResult.totalPowerKW.toFixed(1)} kW total</span>
+      <div className="mb-3 flex items-center justify-between text-xs text-content-muted">
+        <span className="font-mono text-brand">{solverResult.steps.length} steps</span>
+        <span className="font-mono text-brand">{solverResult.totalPowerKW.toFixed(1)} kW total</span>
       </div>
       <ul role="tree" aria-label="Production chain">
         {treeItems.map((item) => (
@@ -81,15 +81,15 @@ export function ProductionTree() {
         ))}
       </ul>
       {solverResult.rawResources.length > 0 && (
-        <div className="mt-4">
-          <h3 className="mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+        <div className="mt-4 border-t border-surface-border pt-4">
+          <h3 className="mb-2 text-xs font-bold text-content-muted uppercase tracking-widest">
             Raw Resources
           </h3>
           <ul className="space-y-1">
             {solverResult.rawResources.map((r) => (
-              <li key={r.itemClassName} className="flex justify-between text-xs text-gray-300">
+              <li key={r.itemClassName} className="flex justify-between text-xs text-content-secondary">
                 <span>{r.itemName}</span>
-                <span>{r.rate.toFixed(2)}/min</span>
+                <span className="font-mono text-brand">{r.rate.toFixed(2)}/min</span>
               </li>
             ))}
           </ul>

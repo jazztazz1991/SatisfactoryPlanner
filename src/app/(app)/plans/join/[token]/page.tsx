@@ -41,22 +41,22 @@ export default function JoinPlanPage() {
   }, [token, router]);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-white">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center">
       {status === "loading" && (
         <>
           <Spinner label="Joining plan" />
-          <p className="text-gray-400">Joining plan...</p>
+          <p className="text-sm text-content-muted">Joining plan...</p>
         </>
       )}
       {status === "success" && (
-        <p className="text-green-400">{message}</p>
+        <p className="text-sm font-medium text-success">{message}</p>
       )}
       {status === "error" && (
-        <div className="text-center">
-          <p className="mb-4 text-red-400">{message}</p>
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-sm text-danger-light">{message}</p>
           <button
             onClick={() => router.push("/dashboard")}
-            className="rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600"
+            className="rounded-full gradient-brand px-6 py-2 text-xs font-bold uppercase tracking-wider text-content-inverse transition-all hover:shadow-glow"
           >
             Go to Dashboard
           </button>

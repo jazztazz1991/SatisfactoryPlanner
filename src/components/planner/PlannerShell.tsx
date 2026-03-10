@@ -348,120 +348,10 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
   }
 
   return (
-    <div className="flex h-[calc(100vh-56px)] overflow-hidden">
-      {/* Left sidebar */}
-      <aside className="flex w-64 flex-col gap-2 border-r border-gray-800 bg-gray-900 overflow-y-auto">
-        <TargetList planId={planId} />
-        <div className="border-t border-gray-800" />
-        <RecipePicker onSelect={(recipe) => addTargetFromRecipe.mutate(recipe)} />
-        <div className="border-t border-gray-800" />
-        {viewMode === "builder" ? (
-          <BuilderNodeInspector
-            onReassignRecipe={(nodeId) => useBuilderStore.getState().setRecipeAssignNodeId(nodeId)}
-          />
-        ) : (
-          <NodeInspector planId={planId} onUpdate={handleNodeUpdate} onDelete={handleNodeDelete} />
-        )}
-      </aside>
-
-      {/* Main area */}
-      <div className="flex flex-1 flex-col">
-        {/* Toolbar */}
-        <div className="flex items-center gap-3 border-b border-gray-800 bg-gray-900 px-4 py-2">
-          <div className="flex rounded border border-gray-700 overflow-hidden">
-            <button
-              aria-pressed={viewMode === "graph"}
-              onClick={switchToGraph}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                viewMode === "graph"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white"
-              }`}
-            >
-              Graph
-            </button>
-            <button
-              aria-pressed={viewMode === "tree"}
-              onClick={() => setViewMode("tree")}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                viewMode === "tree"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white"
-              }`}
-            >
-              Tree
-            </button>
-            <button
-              aria-pressed={viewMode === "factory"}
-              onClick={() => setViewMode("factory")}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                viewMode === "factory"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white"
-              }`}
-            >
-              Factory
-            </button>
-            <button
-              aria-pressed={viewMode === "builder"}
-              onClick={() => setViewMode("builder")}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                viewMode === "builder"
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white"
-              }`}
-            >
-              Builder
-            </button>
-          </div>
-          <Button
-            size="sm"
-            onClick={handleManualCalculate}
-            loading={calcMutation.isPending}
-          >
-            Calculate
-          </Button>
-          {calcMutation.isError && (
-            <span className="text-xs text-red-400">Calculation failed</span>
-          )}
-
-          <label className="flex items-center gap-1.5 text-xs text-gray-400">
-            Tier
-            <select
-              value={maxTier}
-              onChange={(e) => tierMutation.mutate(Number(e.target.value))}
-              className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-white"
-            >
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <button
-            aria-pressed={controlsOpen}
-            aria-label={controlsOpen ? "Hide controls" : "Show controls"}
-            onClick={() => setControlsOpen((o) => !o)}
-            className={`rounded px-2 py-1.5 text-xs font-medium transition-colors ${
-              controlsOpen
-                ? "bg-orange-500 text-white"
-                : "bg-gray-800 text-gray-400 hover:text-white"
-            }`}
-          >
-            ?
-          </button>
-
-          <div className="ml-auto flex items-center gap-2">
-            <PresenceAvatars />
-            <Button size="sm" onClick={() => setShareDialogOpen(true)}>
-              Share
-            </Button>
-          </div>
-        </div>
-
-        {/* View */}
+    <div className="flex h-screen overflow-hidden">
+      {/* Main canvas area */}
+      <div className="relative flex flex-1 flex-col">
+        {/* Canvas */}
         <div className="relative flex-1 overflow-hidden" onMouseMove={onMouseMove}>
           <RemoteCursors />
           {controlsOpen && (
@@ -489,7 +379,97 @@ export function PlannerShell({ planId, initialViewMode, maxTier: initialMaxTier 
             <ProductionTree />
           )}
         </div>
+
+        {/* Floating bottom toolbar */}
+        <div className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
+          <div className="glass glass-border flex items-center gap-2 rounded-full px-3 py-2 shadow-card">
+            <div className="flex gap-1">
+              {(
+                [
+                  { key: "graph", label: "Graph", action: switchToGraph },
+                  { key: "tree", label: "Tree", action: () => setViewMode("tree") },
+                  { key: "factory", label: "Factory", action: () => setViewMode("factory") },
+                  { key: "builder", label: "Builder", action: () => setViewMode("builder") },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.key}
+                  aria-pressed={viewMode === tab.key}
+                  onClick={tab.action}
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                    viewMode === tab.key
+                      ? "gradient-brand text-content-inverse rounded-full shadow-glow"
+                      : "text-content-muted rounded-full hover:text-brand"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mx-1 h-5 w-px bg-surface-border" />
+
+            <Button
+              size="sm"
+              onClick={handleManualCalculate}
+              loading={calcMutation.isPending}
+            >
+              Calc
+            </Button>
+
+            <label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-content-muted">
+              T
+              <select
+                value={maxTier}
+                onChange={(e) => tierMutation.mutate(Number(e.target.value))}
+                className="rounded-lg border border-surface-border bg-surface-overlay px-1.5 py-1 text-[10px] text-content"
+              >
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              aria-pressed={controlsOpen}
+              aria-label={controlsOpen ? "Hide controls" : "Show controls"}
+              onClick={() => setControlsOpen((o) => !o)}
+              className={`h-7 w-7 rounded-full text-[10px] font-bold transition-colors ${
+                controlsOpen
+                  ? "gradient-brand text-content-inverse shadow-glow"
+                  : "text-content-muted hover:text-brand"
+              }`}
+            >
+              ?
+            </button>
+
+            <div className="mx-1 h-5 w-px bg-surface-border" />
+
+            <PresenceAvatars />
+            <Button size="sm" onClick={() => setShareDialogOpen(true)}>
+              Share
+            </Button>
+          </div>
+          {calcMutation.isError && (
+            <div className="mt-1 text-center text-[10px] text-danger-light">Calculation failed</div>
+          )}
+        </div>
       </div>
+
+      {/* Right sidebar (was left) */}
+      <aside className="flex w-72 flex-col gap-2 border-l border-surface-border bg-surface-raised overflow-y-auto">
+        <TargetList planId={planId} />
+        <div className="border-t border-surface-border" />
+        <RecipePicker onSelect={(recipe) => addTargetFromRecipe.mutate(recipe)} />
+        <div className="border-t border-surface-border" />
+        {viewMode === "builder" ? (
+          <BuilderNodeInspector
+            onReassignRecipe={(nodeId) => useBuilderStore.getState().setRecipeAssignNodeId(nodeId)}
+          />
+        ) : (
+          <NodeInspector planId={planId} onUpdate={handleNodeUpdate} onDelete={handleNodeDelete} />
+        )}
+      </aside>
 
       <ShareDialog
         planId={planId}

@@ -17,7 +17,7 @@ describe("Input", () => {
   it("applies error styling when error is present", () => {
     render(<Input error="Bad" id="field" />);
     const input = screen.getByRole("textbox");
-    expect(input.className).toContain("border-red-500");
+    expect(input.className).toContain("border-danger");
   });
 
   it("renders without label or error", () => {

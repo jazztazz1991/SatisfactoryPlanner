@@ -15,12 +15,12 @@ const BUILDING_COLORS: Partial<Record<SpriteKey, { bg: string; border: string }>
   miner: { bg: "bg-lime-900/80", border: "border-lime-500" },
 };
 
-const DEFAULT_COLORS = { bg: "bg-gray-800", border: "border-gray-500" };
+const DEFAULT_COLORS = { bg: "bg-surface-raised", border: "border-surface-border" };
 
 export function BlueprintMachineNode({ data, selected }: NodeProps) {
   const d = data as BlueprintMachineNodeData;
   const colors = BUILDING_COLORS[d.spriteKey] ?? DEFAULT_COLORS;
-  const selectedBorder = selected ? "border-yellow-400" : colors.border;
+  const selectedBorder = selected ? "border-brand shadow-glow" : colors.border;
 
   return (
     <div

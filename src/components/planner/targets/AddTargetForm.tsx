@@ -48,13 +48,13 @@ export function AddTargetForm({ items, onAdd, loading }: AddTargetFormProps) {
           placeholder="Search items..."
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="w-full rounded-xl border border-surface-border bg-surface-overlay px-3 py-1.5 text-sm text-content placeholder-content-muted focus:outline-none focus:glow-ring"
         />
         {showSuggestions && filtered.length > 0 && (
           <ul
             role="listbox"
             aria-label="Item suggestions"
-            className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded border border-gray-600 bg-gray-800 shadow-lg"
+            className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto glass glass-border rounded-xl shadow-card"
           >
             {filtered.map((item) => (
               <li key={item.className}>
@@ -62,7 +62,7 @@ export function AddTargetForm({ items, onAdd, loading }: AddTargetFormProps) {
                   role="option"
                   aria-selected={false}
                   onClick={() => handleSelect(item)}
-                  className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700"
+                  className="w-full px-3 py-1.5 text-left text-sm text-content-secondary hover:bg-brand-muted"
                 >
                   {item.name}
                 </button>
@@ -73,7 +73,7 @@ export function AddTargetForm({ items, onAdd, loading }: AddTargetFormProps) {
       </div>
       <div className="flex items-end gap-2">
         <div className="flex flex-1 flex-col gap-1">
-          <label htmlFor="add-target-rate" className="text-xs text-gray-400">
+          <label htmlFor="add-target-rate" className="text-xs text-content-secondary">
             Rate (per min)
           </label>
           <input
@@ -83,7 +83,7 @@ export function AddTargetForm({ items, onAdd, loading }: AddTargetFormProps) {
             step={1}
             value={rate}
             onChange={(e) => setRate(Number(e.target.value))}
-            className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full rounded-xl border border-surface-border bg-surface-overlay px-3 py-1.5 text-sm text-content focus:outline-none focus:glow-ring"
           />
         </div>
         <Button

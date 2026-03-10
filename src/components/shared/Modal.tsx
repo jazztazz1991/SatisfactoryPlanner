@@ -30,22 +30,22 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       className="fixed inset-0 z-50 flex items-center justify-center"
     >
       <div
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         aria-hidden="true"
         onClick={onClose}
       />
       <div
         ref={dialogRef}
-        className="relative z-10 w-full max-w-md rounded-lg bg-gray-800 p-6 shadow-xl"
+        className="relative z-10 w-full max-w-md glass glass-border rounded-2xl p-6 shadow-card"
       >
         <div className="mb-4 flex items-start justify-between">
-          <h2 id="modal-title" className="text-lg font-semibold text-white">
+          <h2 id="modal-title" className="text-base font-bold uppercase tracking-wide text-content">
             {title}
           </h2>
           <button
             aria-label="Close"
             onClick={onClose}
-            className="text-gray-400 hover:text-white"
+            className="text-content-muted hover:text-brand transition-colors"
           >
             ✕
           </button>

@@ -3,8 +3,8 @@ import type { IPlanWithRole, PlanAccessRole } from "@/domain/types/plan";
 
 const roleBadgeClasses: Record<PlanAccessRole, string> = {
   owner: "",
-  editor: "bg-blue-500/20 text-blue-400",
-  viewer: "bg-gray-500/20 text-gray-400",
+  editor: "rounded-full bg-secondary-muted border border-secondary/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-secondary-light",
+  viewer: "rounded-full bg-secondary-muted border border-secondary/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-secondary-light",
 };
 
 interface PlanCardProps {
@@ -17,43 +17,47 @@ export function PlanCard({ plan, onDelete }: PlanCardProps) {
   const isShared = plan.accessRole !== "owner";
 
   return (
-    <article className="group flex flex-col gap-2 rounded-lg border border-gray-700 bg-gray-800 p-4 transition-colors hover:border-orange-500">
-      <div className="flex items-start justify-between gap-2">
-        <Link
-          href={`/plans/${plan.id}`}
-          className="flex-1 text-base font-semibold text-white hover:text-orange-400"
-        >
-          {plan.name}
-        </Link>
-        {isShared && (
-          <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${roleBadgeClasses[plan.accessRole]}`}>
-            {plan.accessRole}
-          </span>
-        )}
-        {!isShared && onDelete && (
-          <button
-            aria-label={`Delete ${plan.name}`}
-            onClick={() => onDelete(plan.id)}
-            className="text-gray-500 hover:text-red-400"
+    <article className="group flex items-center gap-4 rounded-xl border border-surface-border bg-surface-raised px-5 py-4 transition-all hover:border-brand/30 hover:shadow-card-hover">
+      {/* Left accent bar */}
+      <div className="h-8 w-1 rounded-full bg-brand/30 group-hover:bg-brand transition-colors" />
+
+      {/* Plan info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/plans/${plan.id}`}
+            className="truncate font-bold text-content group-hover:text-brand transition-colors"
           >
-            ✕
-          </button>
+            {plan.name}
+          </Link>
+          {isShared && (
+            <span className={`shrink-0 ${roleBadgeClasses[plan.accessRole]}`}>
+              {plan.accessRole}
+            </span>
+          )}
+        </div>
+        {plan.description && (
+          <p className="mt-0.5 truncate text-xs text-content-muted">{plan.description}</p>
         )}
       </div>
-      {plan.description && (
-        <p className="text-sm text-gray-400 line-clamp-2">{plan.description}</p>
+
+      {/* Metadata — right side */}
+      <div className="hidden items-center gap-4 text-[11px] font-mono text-content-muted sm:flex">
+        <span className="rounded-full border border-surface-border bg-surface-overlay px-2 py-0.5 uppercase">{plan.viewMode}</span>
+        <span>{updatedAt}</span>
+        {isShared && plan.ownerName && <span>by {plan.ownerName}</span>}
+      </div>
+
+      {/* Delete button — far right */}
+      {!isShared && onDelete && (
+        <button
+          aria-label={`Delete ${plan.name}`}
+          onClick={() => onDelete(plan.id)}
+          className="shrink-0 text-content-muted hover:text-danger transition-colors"
+        >
+          ✕
+        </button>
       )}
-      <div className="mt-auto flex items-center gap-3 text-xs text-gray-500">
-        <span className="capitalize">{plan.viewMode}</span>
-        <span>·</span>
-        <span>Updated {updatedAt}</span>
-        {isShared && plan.ownerName && (
-          <>
-            <span>·</span>
-            <span>by {plan.ownerName}</span>
-          </>
-        )}
-      </div>
     </article>
   );
 }

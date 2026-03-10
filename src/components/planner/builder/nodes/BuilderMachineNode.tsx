@@ -15,7 +15,7 @@ const BUILDING_COLORS: Partial<Record<SpriteKey, { bg: string; border: string }>
   miner: { bg: "bg-lime-900/80", border: "border-lime-500" },
 };
 
-const DEFAULT_COLORS = { bg: "bg-gray-800", border: "border-gray-500" };
+const DEFAULT_COLORS = { bg: "bg-surface-raised", border: "border-surface-border" };
 
 function formatRate(rate: number): string {
   if (rate === Math.floor(rate)) return String(rate);
@@ -28,7 +28,7 @@ export function BuilderMachineNode({ data, selected }: NodeProps) {
   const colors = isAssigned
     ? (BUILDING_COLORS[d.spriteKey as SpriteKey] ?? DEFAULT_COLORS)
     : DEFAULT_COLORS;
-  const selectedBorder = selected ? "border-yellow-400" : colors.border;
+  const selectedBorder = selected ? "border-brand shadow-glow" : colors.border;
 
   if (!isAssigned) {
     return (

@@ -73,7 +73,8 @@
       "Bash(npx vitest run src/domain/builder/)",
       "Bash(grep '\"\"uuid\"\"' package.json)",
       "Bash(npx vitest run src/domain/builder/connectionValidation.test.ts)",
-      "Bash(npx vitest run src/domain/builder/rateCalculation.test.ts)"
+      "Bash(npx vitest run src/domain/builder/rateCalculation.test.ts)",
+      "Bash(npx vitest:*)"
     ]
   }
 }

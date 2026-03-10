@@ -31,7 +31,7 @@ export function PlanList() {
   if (isError) return <ErrorMessage message="Failed to load plans" onRetry={() => refetch()} />;
   if (!data?.length) {
     return (
-      <p className="text-center text-gray-500 py-12">
+      <p className="text-center text-sm text-content-muted py-12">
         No plans yet. Create your first one!
       </p>
     );
@@ -41,9 +41,9 @@ export function PlanList() {
   const sharedPlans = data.filter((p) => p.accessRole !== "owner");
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       {ownedPlans.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-col gap-2">
           {ownedPlans.map((plan) => (
             <PlanCard
               key={plan.id}
@@ -55,8 +55,8 @@ export function PlanList() {
       )}
       {sharedPlans.length > 0 && (
         <div>
-          <h2 className="mb-4 text-lg font-semibold text-gray-300">Shared with me</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-content-muted">Shared with me</h2>
+          <div className="flex flex-col gap-2">
             {sharedPlans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} />
             ))}

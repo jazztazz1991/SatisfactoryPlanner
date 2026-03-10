@@ -76,7 +76,7 @@ export function BeltEdge({
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY + labelYOffset}px)`,
               pointerEvents: "all",
             }}
-            className={`rounded bg-gray-900/80 px-1 py-px text-[10px] ${labelTextClass} ${labelBorderClass}`}
+            className={`rounded bg-surface-raised/80 px-1 py-px text-[10px] ${labelTextClass} ${labelBorderClass}`}
           >
             {overCapacity && "⚠ "}Mk{tier} {formatRate(d.rate)}/min
           </div>

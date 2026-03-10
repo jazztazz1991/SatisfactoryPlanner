@@ -3,4 +3,163 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* ── Brand / Primary — Neon Cyan ────────────────── */
+  --color-brand: #00e5ff;
+  --color-brand-hover: #00b8d4;
+  --color-brand-light: #67ffff;
+  --color-brand-dark: #008ba3;
+  --color-brand-muted: rgba(0, 229, 255, 0.08);
+
+  /* ── Accent — Hot Pink / Magenta ────────────────── */
+  --color-accent: #ff0080;
+  --color-accent-hover: #d6006c;
+  --color-accent-light: #ff4da6;
+  --color-accent-muted: rgba(255, 0, 128, 0.08);
+
+  /* ── Secondary — Electric Violet ────────────────── */
+  --color-secondary: #7c3aed;
+  --color-secondary-hover: #6d28d9;
+  --color-secondary-light: #a78bfa;
+  --color-secondary-muted: rgba(124, 58, 237, 0.08);
+
+  /* ── Surfaces ───────────────────────────────────── */
+  --color-surface: #030712;
+  --color-surface-raised: #0a0f1a;
+  --color-surface-overlay: #111827;
+  --color-surface-border: #1e293b;
+  --color-surface-border-subtle: #111827;
+
+  /* ── Content / text ─────────────────────────────── */
+  --color-content: #e2e8f0;
+  --color-content-secondary: #94a3b8;
+  --color-content-muted: #475569;
+  --color-content-inverse: #030712;
+
+  /* ── Danger ─────────────────────────────────────── */
+  --color-danger: #ff3333;
+  --color-danger-hover: #e60000;
+  --color-danger-light: #ff6666;
+  --color-danger-muted: rgba(255, 51, 51, 0.10);
+
+  /* ── Success ────────────────────────────────────── */
+  --color-success: #00ff88;
+  --color-success-light: #66ffbb;
+  --color-success-muted: rgba(0, 255, 136, 0.10);
+
+  /* ── Shadows ────────────────────────────────────── */
+  --shadow-glow: 0 0 20px rgba(0, 229, 255, 0.20);
+  --shadow-glow-brand: 0 0 40px rgba(0, 229, 255, 0.30);
+  --shadow-glow-accent: 0 0 30px rgba(255, 0, 128, 0.25);
+  --shadow-glow-secondary: 0 0 20px rgba(124, 58, 237, 0.25);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 8px 40px rgba(0, 229, 255, 0.12), 0 4px 24px rgba(0, 0, 0, 0.5);
+
+  /* ── Border Radius ──────────────────────────────── */
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  /* ── Animations ─────────────────────────────────── */
+  --animate-pulse-glow: pulse-glow 3s ease-in-out infinite;
+  --animate-gradient-shift: gradient-shift 8s ease infinite;
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+}
+
+/* ── Base ──────────────────────────────────────────────── */
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-content);
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-surface-border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-brand);
+  }
+
+  ::selection {
+    background: rgba(0, 229, 255, 0.25);
+    color: #fff;
+  }
+}
+
+/* ── Utilities ─────────────────────────────────────────── */
+
+@utility glass {
+  background: rgba(10, 15, 26, 0.80);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+}
+
+@utility glass-border {
+  border: 1px solid rgba(30, 41, 59, 0.6);
+}
+
+@utility dot-grid {
+  background-image: radial-gradient(circle, rgba(0, 229, 255, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+@utility text-gradient-brand {
+  background: linear-gradient(135deg, var(--color-brand) 0%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@utility text-gradient-secondary {
+  background: linear-gradient(135deg, var(--color-secondary-light) 0%, var(--color-brand) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@utility gradient-brand {
+  background: linear-gradient(135deg, var(--color-brand) 0%, var(--color-accent) 100%);
+}
+
+@utility glow-ring {
+  box-shadow: 0 0 0 1px var(--color-brand), 0 0 20px rgba(0, 229, 255, 0.15);
+}
+
+@utility glow-ring-accent {
+  box-shadow: 0 0 0 1px var(--color-accent), 0 0 20px rgba(255, 0, 128, 0.15);
+}
+
+@utility neon-underline {
+  position: relative;
+}
+
+@utility scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 229, 255, 0.015) 2px,
+    rgba(0, 229, 255, 0.015) 4px
+  );
+  pointer-events: none;
 }

@@ -9,7 +9,7 @@ export function Spinner({ size = "md", label = "Loading..." }: SpinnerProps) {
   return (
     <div role="status" aria-label={label} className="flex items-center justify-center">
       <span
-        className={`${sizeClasses[size]} animate-spin rounded-full border-2 border-gray-600 border-t-orange-500`}
+        className={`${sizeClasses[size]} animate-spin rounded-full border-2 border-surface-border border-t-brand`}
       />
       <span className="sr-only">{label}</span>
     </div>

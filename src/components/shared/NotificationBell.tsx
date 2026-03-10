@@ -78,34 +78,34 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label={count > 0 ? `${count} notifications` : "No notifications"}
-        className="relative rounded px-2 py-1.5 text-sm text-gray-300 hover:text-white transition-colors"
+        className="relative rounded-full px-3 py-2 text-sm text-content-secondary hover:text-brand hover:bg-brand-muted transition-all"
       >
         &#128276;
         {count > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-mono font-bold text-content">
             {count > 9 ? "9+" : count}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
-          <div className="border-b border-gray-700 px-4 py-2">
-            <h3 className="text-sm font-semibold text-white">Notifications</h3>
+        <div className="absolute right-0 top-full z-50 mt-2 w-72 glass glass-border rounded-xl shadow-card">
+          <div className="border-b border-surface-border px-4 py-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-content">Notifications</h3>
           </div>
 
           <div className="max-h-64 overflow-y-auto">
             {notifications.length === 0 ? (
-              <p className="px-4 py-6 text-center text-xs text-gray-500">No notifications</p>
+              <p className="px-4 py-6 text-center text-xs text-content-muted">No notifications</p>
             ) : (
               notifications.map((n) => (
-                <div key={n.id} className="border-b border-gray-800 px-4 py-3 last:border-b-0">
+                <div key={n.id} className="border-b border-surface-border-subtle px-4 py-3 last:border-b-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-white">{n.planName}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="truncate text-sm text-content">{n.planName}</p>
+                      <p className="text-xs text-content-secondary">
                         {n.type === "invite" ? "Invited as" : "Shared as"}{" "}
-                        <span className="text-orange-400">{n.role}</span>
+                        <span className="text-brand">{n.role}</span>
                       </p>
                     </div>
                     <div className="flex shrink-0 gap-1">
@@ -113,7 +113,7 @@ export function NotificationBell() {
                         <button
                           onClick={() => handleAccept(n.id)}
                           disabled={loading}
-                          className="rounded bg-orange-500 px-2 py-1 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-50"
+                          className="gradient-brand rounded-full px-3 py-1 text-xs font-bold uppercase text-content-inverse shadow-glow hover:shadow-glow-brand disabled:opacity-50 transition-all"
                         >
                           Accept
                         </button>
@@ -121,7 +121,7 @@ export function NotificationBell() {
                         <Link
                           href={`/plans/${n.planId}`}
                           onClick={() => { setOpen(false); handleDismiss(n.id); }}
-                          className="rounded bg-gray-700 px-2 py-1 text-xs font-medium text-white hover:bg-gray-600"
+                          className="bg-surface-overlay border border-surface-border rounded-full px-3 py-1 text-xs font-bold text-content hover:border-brand/30 hover:text-brand transition-all"
                         >
                           View
                         </Link>

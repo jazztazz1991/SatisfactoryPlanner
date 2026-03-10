@@ -7,7 +7,7 @@ export function LiftNode({ data, selected }: NodeProps) {
   const isDown = d.direction === "down";
   const arrow = isDown ? "▼" : "▲";
   const bg = isDown ? "bg-violet-800/80" : "bg-violet-800/80";
-  const border = selected ? "border-yellow-400" : "border-violet-400";
+  const border = selected ? "border-brand shadow-glow" : "border-violet-400";
 
   return (
     <div

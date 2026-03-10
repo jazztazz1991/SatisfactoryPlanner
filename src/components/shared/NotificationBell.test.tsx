@@ -128,6 +128,6 @@ describe("NotificationBell", () => {
     await user.click(screen.getByRole("button", { name: /notifications/i }));
 
     const editorBadge = screen.getByText("editor");
-    expect(editorBadge.className).toContain("text-orange-400");
+    expect(editorBadge.className).toContain("text-brand");
   });
 });

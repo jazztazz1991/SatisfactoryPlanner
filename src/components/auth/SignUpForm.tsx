@@ -52,7 +52,7 @@ export function SignUpForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && (
-        <p role="alert" className="rounded bg-red-900/40 px-3 py-2 text-sm text-red-300">
+        <p role="alert" className="rounded-xl border border-danger/30 bg-danger-muted px-4 py-3 text-sm text-danger-light">
           {error}
         </p>
       )}
@@ -87,13 +87,13 @@ export function SignUpForm() {
         Create account
       </Button>
       <div className="relative my-1 flex items-center">
-        <div className="flex-1 border-t border-gray-600" />
-        <span className="mx-3 text-xs text-gray-500">or</span>
-        <div className="flex-1 border-t border-gray-600" />
+        <div className="flex-1 border-t border-surface-border" />
+        <span className="mx-3 text-xs uppercase tracking-widest text-content-muted">or</span>
+        <div className="flex-1 border-t border-surface-border" />
       </div>
-      <Button type="button" variant="secondary" className="w-full" onClick={handleGitHub}>
+      <button type="button" className="w-full rounded-full border border-surface-border bg-surface-overlay py-2.5 text-sm font-medium text-content hover:border-brand/30 hover:shadow-glow transition-all" onClick={handleGitHub}>
         Continue with GitHub
-      </Button>
+      </button>
     </form>
   );
 }

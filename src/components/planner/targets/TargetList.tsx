@@ -100,14 +100,14 @@ export function TargetList({ planId }: TargetListProps) {
 
   return (
     <div className="flex flex-col gap-2 p-3">
-      <h2 className="text-sm font-semibold text-gray-300">Production Targets</h2>
+      <h2 className="text-xs font-bold uppercase tracking-widest text-content-muted">Production Targets</h2>
       <AddTargetForm
         items={availableItems}
         onAdd={(itemClassName, targetRate) => createMutation.mutate({ itemClassName, targetRate })}
         loading={createMutation.isPending}
       />
       {!targets?.length ? (
-        <p className="text-xs text-gray-500">No targets set</p>
+        <p className="text-xs text-content-muted">No targets set</p>
       ) : (
         <ul className="flex flex-col gap-1" role="list">
           {targets.map((target) => (

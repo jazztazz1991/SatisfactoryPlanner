@@ -10,12 +10,12 @@ export function ResourceNode({ data, selected }: NodeProps) {
   const d = data as ResourceNodeData;
   return (
     <div
-      className={`min-w-[140px] rounded-lg border-2 bg-green-900/40 p-3 text-sm shadow-lg transition-colors ${
-        selected ? "border-orange-500" : "border-green-700"
+      className={`min-w-[140px] rounded-xl border-2 bg-green-900/40 p-4 text-sm transition-colors ${
+        selected ? "border-brand shadow-glow" : "border-green-700"
       }`}
     >
       <div className="font-semibold text-green-300">{d.itemName}</div>
-      <div className="mt-1 text-xs text-green-400">{d.rate.toFixed(2)}/min</div>
+      <div className="mt-1 text-xs font-mono text-green-400">{d.rate.toFixed(2)}/min</div>
       <Handle type="source" position={Position.Bottom} style={{ background: "#f97316", width: 10, height: 10 }} />
     </div>
   );

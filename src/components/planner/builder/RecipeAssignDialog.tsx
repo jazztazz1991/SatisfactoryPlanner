@@ -35,12 +35,12 @@ export function RecipeAssignDialog({ open, buildingClassName, recipes, onSelect,
       role="dialog"
       aria-label="Assign Recipe"
     >
-      <div className="w-80 max-h-[70vh] flex flex-col rounded-lg border border-gray-700 bg-gray-800 shadow-xl">
-        <div className="flex items-center justify-between border-b border-gray-700 px-4 py-3">
-          <h3 className="text-sm font-medium text-white">Assign Recipe</h3>
+      <div className="w-80 max-h-[70vh] flex flex-col glass glass-border rounded-2xl shadow-card">
+        <div className="flex items-center justify-between border-b border-surface-border px-4 py-3">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-content-muted">Assign Recipe</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white"
+            className="text-content-secondary hover:text-content"
             aria-label="Close"
           >
             ✕
@@ -53,7 +53,7 @@ export function RecipeAssignDialog({ open, buildingClassName, recipes, onSelect,
             placeholder="Search recipes..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded border border-gray-600 bg-gray-900 px-3 py-1.5 text-sm text-white placeholder-gray-500"
+            className="w-full rounded-xl border border-surface-border bg-surface-overlay px-3 py-1.5 text-sm text-content placeholder-content-muted focus:outline-none focus:glow-ring"
             autoFocus
             aria-label="Search recipes"
           />
@@ -61,18 +61,18 @@ export function RecipeAssignDialog({ open, buildingClassName, recipes, onSelect,
 
         <ul className="flex-1 overflow-y-auto px-2 pb-2" role="listbox" aria-label="Recipes">
           {filtered.length === 0 && (
-            <li className="px-2 py-3 text-center text-xs text-gray-500">No recipes found</li>
+            <li className="px-2 py-3 text-center text-xs text-content-muted">No recipes found</li>
           )}
           {filtered.map((r) => (
             <li key={r.className}>
               <button
                 onClick={() => { onSelect(r); setSearch(""); }}
-                className="w-full rounded px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700"
+                className="w-full rounded-xl px-3 py-1.5 text-left text-sm text-content-secondary hover:bg-brand-muted transition-colors"
                 role="option"
                 aria-selected={false}
               >
                 {r.name}
-                {r.isAlternate && <span className="ml-1 text-[10px] text-orange-400">Alt</span>}
+                {r.isAlternate && <span className="ml-1 rounded-full bg-accent-muted border border-accent/20 px-1.5 text-[10px] font-bold text-accent-light uppercase">Alt</span>}
               </button>
             </li>
           ))}

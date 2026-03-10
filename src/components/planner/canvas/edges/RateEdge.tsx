@@ -42,7 +42,7 @@ export function RateEdge({
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               pointerEvents: "all",
             }}
-            className="rounded bg-gray-900 px-1.5 py-0.5 text-xs text-orange-300 border border-orange-700"
+            className="rounded bg-surface-overlay border border-surface-border text-content-secondary font-mono text-[10px] px-1.5 py-0.5"
           >
             {d.rate.toFixed(1)}/min
           </div>

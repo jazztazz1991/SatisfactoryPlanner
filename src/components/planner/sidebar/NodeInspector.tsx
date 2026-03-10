@@ -18,7 +18,7 @@ export function NodeInspector({ onUpdate, onDelete }: NodeInspectorProps) {
 
   if (!selectedNode) {
     return (
-      <div className="p-4 text-sm text-gray-500">
+      <div className="p-4 text-sm text-content-muted">
         Select a node to inspect
       </div>
     );
@@ -35,13 +35,13 @@ export function NodeInspector({ onUpdate, onDelete }: NodeInspectorProps) {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <h2 className="font-semibold text-white">{data.recipeName ?? "Node"}</h2>
+      <h2 className="text-xs font-bold uppercase tracking-widest text-content-muted">{data.recipeName ?? "Node"}</h2>
       {data.buildingName && (
-        <p className="text-xs text-gray-400">{data.buildingName}</p>
+        <p className="text-xs text-content-secondary">{data.buildingName}</p>
       )}
-      <div className="text-xs text-gray-300 space-y-1">
-        <div>Machines: <span className="text-white">{(data.machineCount ?? 0).toFixed(2)}</span></div>
-        <div>Power: <span className="text-white">{(data.powerUsageKW ?? 0).toFixed(1)} kW</span></div>
+      <div className="text-xs text-content-secondary space-y-1">
+        <div>Machines: <span className="font-mono text-brand">{(data.machineCount ?? 0).toFixed(2)}</span></div>
+        <div>Power: <span className="font-mono text-brand">{(data.powerUsageKW ?? 0).toFixed(1)} kW</span></div>
       </div>
       <Input
         id="overclock"
